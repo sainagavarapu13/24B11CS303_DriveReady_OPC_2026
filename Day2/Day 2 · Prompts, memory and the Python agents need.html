@@ -1,0 +1,1253 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Day 2 · Prompts, memory and the Python agents need</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+/* Layout idea: study notes — sticky lesson index on the left, one readable column; coloured stripes mark analogies (amber), design lens (teal) and warnings (red). */
+:root{
+  --bg:#F5F7F8;
+  --paper:#FFFFFF;
+  --ink:#16222B;
+  --muted:#5B6B76;
+  --line:#D7DFE3;
+  --accent:#0E7C6B;          /* teal: design lens, key path */
+  --accent-soft:#E2F3EF;
+  --warm:#B86A00;            /* amber: analogies */
+  --warm-soft:#FBF0DF;
+  --danger:#B3261E;
+  --danger-soft:#FBE7E5;
+  --code-bg:#0F1A21;
+  --code-ink:#DCE6EA;
+  --panel:#F0F4F5;
+  --font-display:"Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
+  --font-body:"Atkinson Hyperlegible", "Segoe UI", system-ui, sans-serif;
+  --font-mono:"JetBrains Mono", ui-monospace, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0E151A; --paper:#141E25; --ink:#E4ECEF; --muted:#9AAAB3; --line:#2A3943;
+    --accent:#4CC5AE; --accent-soft:#16332E; --warm:#E7A64A; --warm-soft:#33270F;
+    --danger:#F08B83; --danger-soft:#3A1C1A; --code-bg:#0A1116; --code-ink:#DCE6EA; --panel:#1B2830;
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0E151A; --paper:#141E25; --ink:#E4ECEF; --muted:#9AAAB3; --line:#2A3943;
+  --accent:#4CC5AE; --accent-soft:#16332E; --warm:#E7A64A; --warm-soft:#33270F;
+  --danger:#F08B83; --danger-soft:#3A1C1A; --code-bg:#0A1116; --code-ink:#DCE6EA; --panel:#1B2830;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+@media (prefers-reduced-motion: reduce){html{scroll-behavior:auto}}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--font-body);font-size:17px;line-height:1.62}
+a{color:var(--accent)}
+a:focus-visible,summary:focus-visible,button:focus-visible{outline:3px solid var(--accent);outline-offset:2px;border-radius:4px}
+.shell{display:grid;grid-template-columns:250px minmax(0,1fr);gap:40px;max-width:1180px;margin:0 auto;padding:32px 24px 80px}
+nav.toc{position:sticky;top:20px;align-self:start;max-height:calc(100vh - 40px);overflow:auto;font-size:14.5px;padding-right:6px}
+nav.toc .tt{font-family:var(--font-display);font-weight:800;font-size:15px;letter-spacing:.02em;margin:0 0 10px}
+nav.toc ol{list-style:none;margin:0;padding:0;display:grid;gap:2px}
+nav.toc a{display:block;padding:5px 10px;border-radius:6px;color:var(--ink);text-decoration:none;border-left:3px solid transparent}
+nav.toc a:hover{background:var(--panel);border-left-color:var(--accent)}
+nav.toc .sub a{padding-left:24px;color:var(--muted);font-size:13.5px}
+main{min-width:0}
+header.hero{padding:8px 0 28px;border-bottom:1px solid var(--line);margin-bottom:12px}
+.eyebrow{font-family:var(--font-mono);font-size:13px;color:var(--accent);letter-spacing:.04em;text-transform:uppercase}
+h1,h2,h3,h4{font-family:var(--font-display);text-wrap:balance;line-height:1.2}
+h1{font-size:42px;font-weight:800;margin:6px 0 12px}
+h2{font-size:30px;font-weight:800;margin:56px 0 10px;padding-top:12px}
+h3{font-size:22px;font-weight:600;margin:34px 0 8px}
+h4{font-size:18px;font-weight:600;margin:22px 0 6px}
+.lede{font-size:19px;color:var(--muted);max-width:68ch;margin:0}
+p,li{max-width:70ch}
+.lessonno{display:inline-block;font-family:var(--font-mono);font-size:14px;color:var(--paper);background:var(--accent);border-radius:6px;padding:2px 9px;margin-right:10px;vertical-align:middle;position:relative;top:-3px}
+.map{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:10px;margin:18px 0 0;padding:0;list-style:none}
+.map li{background:var(--paper);border:1px solid var(--line);border-radius:10px;padding:10px 14px;font-size:15px}
+.map li b{font-family:var(--font-mono);color:var(--accent);margin-right:6px}
+.box{border-radius:10px;padding:14px 18px;margin:18px 0;border-left:5px solid;background:var(--paper)}
+.box > :first-child{margin-top:0}
+.box > :last-child{margin-bottom:0}
+.box .tag{display:block;font-family:var(--font-mono);font-size:12.5px;letter-spacing:.06em;text-transform:uppercase;font-weight:600;margin-bottom:4px}
+.analogy{border-color:var(--warm);background:var(--warm-soft)}
+.analogy .tag{color:var(--warm)}
+.lens{border-color:var(--accent);background:var(--accent-soft)}
+.lens .tag{color:var(--accent)}
+.warn{border-color:var(--danger);background:var(--danger-soft)}
+.warn .tag{color:var(--danger)}
+.remember{border-color:var(--ink);background:var(--paper);border-left-width:5px;box-shadow:0 1px 0 var(--line)}
+.remember ul{margin:4px 0 0;padding-left:20px}
+.yours{display:inline-block;font-family:var(--font-mono);font-size:11.5px;background:var(--warm);color:var(--paper);border-radius:4px;padding:1px 7px;margin-left:6px;vertical-align:middle;text-transform:none;letter-spacing:0}
+.tablewrap{overflow-x:auto;margin:16px 0;border:1px solid var(--line);border-radius:10px;background:var(--paper)}
+table{border-collapse:collapse;width:100%;font-size:15.5px}
+th,td{text-align:left;vertical-align:top;padding:9px 12px;border-bottom:1px solid var(--line)}
+th{font-family:var(--font-display);font-weight:600;background:var(--panel);font-size:15px}
+tr:last-child td{border-bottom:0}
+td code,p code,li code,th code{font-family:var(--font-mono);font-size:.86em;background:var(--panel);padding:1px 5px;border-radius:4px;word-break:break-word}
+pre{background:var(--code-bg);color:var(--code-ink);border-radius:10px;padding:16px 18px;overflow-x:auto;font-family:var(--font-mono);font-size:14px;line-height:1.55;margin:16px 0}
+pre code{font-family:inherit;background:none;padding:0}
+.k{color:#7FC8FF}.s{color:#B5E48C}.c{color:#7C8F99;font-style:italic}.n{color:#F5B971}
+figure{margin:22px 0;background:var(--paper);border:1px solid var(--line);border-radius:12px;padding:16px 16px 10px;overflow-x:auto}
+figcaption{font-size:14.5px;color:var(--muted);margin-top:8px;max-width:none}
+svg.dg{display:block;width:100%;max-width:100%;height:auto;min-width:560px;color:var(--ink)}
+svg.dg text{fill:currentColor;font-family:var(--font-body);font-size:13px}
+svg.dg .t-s{font-size:11.5px;fill:var(--muted)}
+svg.dg .t-b{font-weight:700}
+svg.dg .t-m{font-family:var(--font-mono);font-size:12px}
+svg.dg .b{fill:var(--panel);stroke:currentColor;stroke-width:1.2}
+svg.dg .ba{fill:var(--accent-soft);stroke:var(--accent);stroke-width:1.8}
+svg.dg .bw{fill:var(--warm-soft);stroke:var(--warm);stroke-width:1.5}
+svg.dg .bd{fill:var(--danger-soft);stroke:var(--danger);stroke-width:1.5}
+svg.dg .ln{stroke:currentColor;stroke-width:1.4;fill:none}
+svg.dg .lna{stroke:var(--accent);stroke-width:2;fill:none}
+svg.dg .dash{stroke:var(--muted);stroke-width:1.2;fill:none;stroke-dasharray:5 4}
+svg.dg .bar{fill:var(--accent)}
+svg.dg .bar2{fill:var(--warm)}
+svg.dg .ah{fill:currentColor}
+svg.dg .aha{fill:var(--accent)}
+details{background:var(--paper);border:1px solid var(--line);border-radius:10px;margin:12px 0;padding:0 16px}
+summary{cursor:pointer;font-weight:700;padding:12px 0}
+details[open]{padding-bottom:12px}
+.qa dt{font-weight:700;margin-top:12px}
+.qa dd{margin:4px 0 0 0;color:var(--ink)}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.card{background:var(--paper);border:1px solid var(--line);border-radius:10px;padding:12px 16px}
+.card h4{margin-top:0}
+/* ---------- interactive widgets ---------- */
+.sim{background:var(--paper);border:1px solid var(--line);border-radius:12px;margin:22px 0;overflow:hidden}
+.sim-head{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:10px 16px;background:var(--panel);border-bottom:1px solid var(--line);flex-wrap:wrap}
+.sim-head .ttl{font-family:var(--font-display);font-weight:600;font-size:16px}
+.sim-head .live{font-family:var(--font-mono);font-size:11.5px;color:var(--paper);background:var(--accent);border-radius:4px;padding:2px 7px;letter-spacing:.05em;text-transform:uppercase}
+.sim-body{padding:14px 16px 16px}
+.sim label{font-weight:700;font-size:14.5px}
+.sim textarea,.sim input[type=text]{width:100%;font:inherit;font-size:16px;padding:10px 12px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--ink);resize:vertical}
+.sim textarea:focus,.sim input:focus{outline:2px solid var(--accent);outline-offset:1px}
+.btn{font:inherit;font-size:14.5px;font-weight:700;border:1px solid var(--accent);background:var(--accent);color:var(--paper);border-radius:8px;padding:7px 14px;cursor:pointer}
+.btn.ghost{background:transparent;color:var(--accent)}
+.btn:disabled{opacity:.5;cursor:default}
+.row{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin:10px 0}
+.chips{display:flex;flex-wrap:wrap;gap:4px;margin:12px 0;min-height:34px;font-family:var(--font-mono);font-size:14px}
+.chip{padding:3px 6px;border-radius:5px;white-space:pre;border:1px solid transparent}
+.chip.c0{background:#DDEFFC;color:#11344F}.chip.c1{background:#FBE3C8;color:#4A2A00}.chip.c2{background:#DDF3E4;color:#123D22}.chip.c3{background:#F3DDF3;color:#3F1440}.chip.c4{background:#E7E3FB;color:#231A55}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:10px}
+.stat{background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:8px 12px}
+.stat b{display:block;font-family:var(--font-display);font-size:24px;font-variant-numeric:tabular-nums}
+.stat span{font-size:13px;color:var(--muted)}
+.note{font-size:13.5px;color:var(--muted);margin:8px 0 0}
+.tbar{display:grid;grid-template-columns:96px 1fr 52px;gap:8px;align-items:center;margin:5px 0;font-size:14.5px}
+.tbar .track{background:var(--panel);border-radius:4px;height:20px;overflow:hidden}
+.tbar .fill{height:100%;background:var(--accent);border-radius:4px;transition:width .35s ease}
+.tbar .pct{font-family:var(--font-mono);font-size:13px;text-align:right;font-variant-numeric:tabular-nums}
+.tbar.hit .fill{background:var(--warm)}
+input[type=range]{width:220px;accent-color:var(--accent)}
+.sentence{font-size:18px;padding:10px 12px;background:var(--bg);border-radius:8px;border:1px dashed var(--line);min-height:46px}
+.sentence .new{background:var(--warm-soft);color:var(--warm);font-weight:700;border-radius:4px;padding:0 3px}
+.status{font-size:15px;padding:8px 12px;border-radius:8px;background:var(--accent-soft);border-left:4px solid var(--accent);margin-top:10px;min-height:42px}
+.opts{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0}
+.opt{font:inherit;font-size:15px;padding:7px 14px;border-radius:999px;border:1px solid var(--line);background:var(--bg);color:var(--ink);cursor:pointer}
+.opt.right{background:var(--accent-soft);border-color:var(--accent)}
+.opt.wrong{background:var(--danger-soft);border-color:var(--danger)}
+.toggles{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:8px 18px;margin:8px 0}
+.toggles label{font-weight:400;display:flex;gap:8px;align-items:flex-start}
+.result{font-family:var(--font-mono);font-size:13.5px;background:var(--code-bg);color:var(--code-ink);border-radius:8px;padding:10px 12px;white-space:pre-wrap;margin-top:8px}
+.cw{display:flex;height:46px;border-radius:8px;overflow:hidden;border:1px solid var(--line);margin:10px 0;background:var(--bg)}
+.cw div{display:flex;align-items:center;justify-content:center;font-size:12.5px;white-space:nowrap;overflow:hidden;transition:width .3s ease}
+.cw .sys{background:var(--accent-soft)}.cw .his{background:var(--panel)}.cw .doc{background:var(--warm-soft)}.cw .ans{background:var(--accent);color:var(--paper)}.cw .over{background:var(--danger);color:#fff}
+.hist{display:flex;flex-direction:column;gap:4px;margin:10px 0}
+.hist div{font-size:14px;padding:5px 10px;border-radius:6px;border:1px solid var(--line);background:var(--bg)}
+.hist .r-system{border-left:4px solid var(--ink)}.hist .r-user{border-left:4px solid var(--accent)}.hist .r-assistant{border-left:4px solid var(--warm)}
+.hist .fresh{animation:pop .5s ease}
+@keyframes pop{from{transform:translateY(-6px);opacity:.2}to{transform:none;opacity:1}}
+/* svg highlight + flowing arrows */
+svg.dg .b,svg.dg .ba,svg.dg .bw,svg.dg .bd{transition:fill .25s ease,stroke .25s ease,stroke-width .25s ease}
+svg.dg .on{fill:var(--warm-soft)!important;stroke:var(--warm)!important;stroke-width:3!important}
+svg.dg.flow .ln,svg.dg.flow .lna{stroke-dasharray:7 5;animation:dash 1.1s linear infinite}
+@keyframes dash{to{stroke-dashoffset:-24}}
+@media (prefers-reduced-motion: reduce){
+  svg.dg.flow .ln,svg.dg.flow .lna{animation:none;stroke-dasharray:none}
+  .tbar .fill,.cw div{transition:none}
+  .hist .fresh{animation:none}
+}
+footer{margin-top:64px;padding-top:20px;border-top:1px solid var(--line);color:var(--muted);font-size:14.5px}
+@media (max-width: 900px){
+  .shell{grid-template-columns:1fr;gap:10px;padding:20px 16px 60px}
+  nav.toc{position:static;max-height:none;border:1px solid var(--line);border-radius:10px;padding:12px;background:var(--paper)}
+  nav.toc .sub{display:none}
+  h1{font-size:32px} h2{font-size:25px}
+  .two{grid-template-columns:1fr}
+}
+/* ---------- Day 1 tutorial additions ---------- */
+:root{--info:#1F5FA8;--info-soft:#E7F0FA}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){--info:#7FB2EE;--info-soft:#15263A}}
+:root[data-theme="dark"]{--info:#7FB2EE;--info-soft:#15263A}
+.real{border-color:var(--info);background:var(--info-soft)}
+.real .tag{color:var(--info)}
+.oneline{font-size:19px;font-family:var(--font-display);font-weight:600;border-left:5px solid var(--accent);padding:4px 0 4px 14px;margin:6px 0 16px;max-width:none}
+.meta{display:flex;gap:8px;flex-wrap:wrap;margin:8px 0 0}
+.meta span{font-family:var(--font-mono);font-size:12.5px;background:var(--paper);border:1px solid var(--line);border-radius:999px;padding:3px 10px;color:var(--muted)}
+.meta b{color:var(--ink)}
+/* video player */
+.vid{background:var(--paper);border:1px solid var(--line);border-radius:12px;margin:22px 0;overflow:hidden}
+.vid-head{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:10px 16px;background:var(--panel);border-bottom:1px solid var(--line)}
+.vid-head .ttl{font-family:var(--font-display);font-weight:600;font-size:16px}
+.vid-head .live{font-family:var(--font-mono);font-size:11.5px;color:var(--paper);background:var(--warm);border-radius:4px;padding:2px 7px;letter-spacing:.05em;text-transform:uppercase}
+.vid-stage{padding:14px 14px 4px;overflow-x:auto;position:relative}
+.vid-stage svg.dg{min-width:600px}
+.vid-cap{min-height:56px;margin:4px 14px 10px;padding:10px 14px;border-radius:8px;background:var(--bg);border:1px dashed var(--line);font-size:16.5px;max-width:none}
+.vid-bar{display:flex;align-items:center;gap:12px;padding:10px 14px;border-top:1px solid var(--line);background:var(--panel);flex-wrap:wrap}
+.vid-play{min-width:92px}
+.vid-prog{flex:1;min-width:140px;height:8px;background:var(--line);border-radius:4px;cursor:pointer;position:relative}
+.vid-prog div{height:100%;width:0;background:var(--warm);border-radius:4px}
+.vid-time{font-family:var(--font-mono);font-size:12.5px;color:var(--muted);font-variant-numeric:tabular-nums}
+.vid-bar label{font-size:14px;display:flex;gap:6px;align-items:center}
+svg.dg .ve{opacity:0;transition:opacity .55s ease,transform .9s cubic-bezier(.4,.1,.2,1)}
+svg.dg .ve.show{opacity:1}
+svg.dg .grow{transform-box:fill-box;transform-origin:0 50%;transition:transform .9s cubic-bezier(.4,.1,.2,1)}
+svg.dg .spin{transform-box:view-box;transition:transform .9s cubic-bezier(.4,.1,.2,1)}
+svg.dg .big{font-size:24px;font-family:var(--font-mono)}
+svg.dg .t-l{font-size:15px}
+svg.dg .t-red{fill:var(--danger);font-weight:700}
+svg.dg .t-ok{fill:var(--accent);font-weight:700}
+/* quiz */
+.quiz{margin:26px 0 8px;border:1px solid var(--line);border-radius:12px;background:var(--paper);overflow:hidden}
+.quiz-head{padding:10px 16px;background:var(--accent-soft);border-bottom:1px solid var(--line);font-family:var(--font-display);font-weight:600;display:flex;justify-content:space-between;gap:10px}
+.quiz-head span{font-family:var(--font-mono);font-size:12.5px;color:var(--accent);font-weight:600}
+.mcq{padding:14px 16px;border-bottom:1px solid var(--line)}
+.mcq:last-child{border-bottom:0}
+.mcq .q{font-weight:700;margin:0 0 8px;max-width:none}
+.mcq .choices{display:grid;gap:6px}
+.mcq .choices button{font:inherit;font-size:15.5px;text-align:left;padding:8px 12px;border-radius:8px;border:1px solid var(--line);background:var(--bg);color:var(--ink);cursor:pointer;display:flex;gap:10px;align-items:flex-start}
+.mcq .choices button b{font-family:var(--font-mono);color:var(--muted);min-width:1.2em}
+.mcq .choices button:hover:not(:disabled){border-color:var(--accent)}
+.mcq .choices button.right{background:var(--accent-soft);border-color:var(--accent)}
+.mcq .choices button.wrong{background:var(--danger-soft);border-color:var(--danger)}
+.mcq .choices button:disabled{cursor:default}
+.mcq .why{display:none;margin-top:10px;font-size:15px;padding:8px 12px;border-radius:8px;background:var(--panel);max-width:none}
+.mcq.done .why{display:block}
+.mcq .retry{display:none;margin-top:8px}
+.mcq.done .retry{display:inline-block}
+.score{position:sticky;bottom:12px;margin-top:14px;background:var(--paper);border:1px solid var(--line);border-radius:10px;padding:10px 12px;font-size:14px}
+.score b{font-family:var(--font-display);font-size:22px;color:var(--accent);font-variant-numeric:tabular-nums}
+.score .track{height:6px;background:var(--panel);border-radius:3px;margin-top:6px;overflow:hidden}
+.score .track div{height:100%;width:0;background:var(--accent);transition:width .4s ease}
+.agenda{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:10px;margin:18px 0 0;padding:0;list-style:none;counter-reset:ag}
+.agenda li{background:var(--paper);border:1px solid var(--line);border-radius:10px;padding:10px 14px;font-size:15px}
+.agenda li a{text-decoration:none;color:var(--ink)}
+.agenda li b{font-family:var(--font-mono);color:var(--accent);margin-right:6px}
+.agenda li small{display:block;color:var(--muted);font-size:13px}
+@media (prefers-reduced-motion: reduce){svg.dg .ve,svg.dg .grow,svg.dg .spin{transition:opacity .2s linear}}
+
+</style>
+</head>
+<body>
+<div class="shell">
+
+<nav class="toc" aria-label="Topics">
+  <p class="tt">Day 2 tutorial</p>
+  <ol>
+    <li><a href="#start">Today at a glance</a></li>
+    <li><a href="#t1">1 · Messages and roles</a></li>
+    <li><a href="#t2">2 · The system prompt</a></li>
+    <li><a href="#t3">3 · Few-shot examples</a></li>
+    <li><a href="#t4">4 · Asking for JSON</a></li>
+    <li><a href="#t5">5 · Memory by hand</a></li>
+    <li><a href="#t6">6 · Dicts and JSON in Python</a></li>
+    <li><a href="#t7">7 · Functions and type hints</a></li>
+    <li><a href="#t8">8 · Decorators</a></li>
+    <li><a href="#t9">9 · try / except</a></li>
+    <li><a href="#build">Today's build + your 10%</a></li>
+    <li><a href="#wrap">Summary</a></li>
+  </ol>
+  <div class="score" id="score" aria-live="polite">Quiz score<br><b id="sc-n">0</b> / <span id="sc-t">18</span> correct<div class="track"><div id="sc-bar"></div></div></div>
+</nav>
+
+<main>
+<header class="hero">
+  <div class="eyebrow">Ai Agents Workshop · Level 1 Fundamentals · Day 2 of 2</div>
+  <h1>Prompts, memory and the Python agents need</h1>
+  <p class="lede">Day 1 gave you one API call. Today you learn to control what the model says (prompts), to make it remember (history), and the five pieces of Python that every agent in this workshop is built from. By the end, Sweet Crumbs has a chatbot that knows its menu, remembers the customer and never crashes.</p>
+  <div class="meta"><span><b>2 hours</b> · 1 session</span><span>Trainer <b>90%</b> · Students <b>10%</b></span><span>Runs in <b>Google Colab</b></span><span>Case study: <b>Sweet Crumbs Home Bakery</b></span></div>
+</header>
+
+<section id="start">
+  <h2>Today at a glance</h2>
+  <p>Topics 1–5 are about <strong>talking to the model well</strong>. Topics 6–9 are the <strong>Python</strong> you'll use every day from Day 3 onwards. Every topic ends with two questions; your score is kept in the side panel.</p>
+  <ol class="agenda">
+    <li><a href="#t1"><b>01</b>Messages and roles<small>system, user, assistant · 10 min</small></a></li>
+    <li><a href="#t2"><b>02</b>The system prompt<small>Role · Facts · Rules · Format · 15 min</small></a></li>
+    <li><a href="#t3"><b>03</b>Few-shot examples<small>Show, don't just tell · 10 min</small></a></li>
+    <li><a href="#t4"><b>04</b>Asking for JSON<small>Answers your code can use · 15 min</small></a></li>
+    <li><a href="#t5"><b>05</b>Memory by hand<small>The chat loop + trimming · 15 min</small></a></li>
+    <li><a href="#t6"><b>06</b>Dicts and JSON in Python<small>The bakery menu as data · 10 min</small></a></li>
+    <li><a href="#t7"><b>07</b>Functions and type hints<small>The shape of every tool · 10 min</small></a></li>
+    <li><a href="#t8"><b>08</b>Decorators<small>What the @ really does · 10 min</small></a></li>
+    <li><a href="#t9"><b>09</b>try / except<small>Fail politely, never crash · 10 min</small></a></li>
+  </ol>
+  <div class="box real"><span class="tag">Where we are in the case study</span>
+    <p>Day 1: Sweet Crumbs' bot could answer <em>one</em> question. Today it becomes a real chatbot: it follows the owner's rules, remembers who it is talking to, turns orders into data and handles errors politely. On Day 3 it becomes an <strong>agent</strong>, and on Day 4 it gets tools.</p>
+  </div>
+</section>
+
+<!-- ============ T1 ============ -->
+<section id="t1">
+  <h2><span class="lessonno">01</span>Messages and roles</h2>
+  <p class="oneline">Every call sends a list of messages. Each message has a role: system, user or assistant.</p>
+  <p>The <code>messages</code> list is the whole conversation the model sees, top to bottom. <strong>system</strong> = your instructions to the model (the customer never sees them). <strong>user</strong> = what the person typed. <strong>assistant</strong> = what the model replied earlier. The model reads the whole list and writes the next assistant message.</p>
+  <figure>
+    <svg class="dg flow" viewBox="0 0 760 236" role="img" aria-label="A messages list with a system message, a user message, an assistant reply and a new user message is sent to the model, which writes the next assistant message.">
+      <defs><marker id="f1" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" class="ah"/></marker></defs>
+      <rect x="20" y="16" width="420" height="204" rx="10" class="b"/><text x="36" y="40" class="t-b">messages = [</text>
+      <rect x="40" y="52" width="380" height="34" rx="6" fill="var(--paper)" stroke="var(--ink)"/><text x="54" y="74" class="t-m">system:</text><text x="132" y="74">You are Sweet Crumbs' assistant…</text>
+      <rect x="40" y="94" width="380" height="34" rx="6" class="ba"/><text x="54" y="116" class="t-m">user:</text><text x="132" y="116">Eggless available?</text>
+      <rect x="40" y="136" width="380" height="34" rx="6" class="bw"/><text x="54" y="158" class="t-m">assistant:</text><text x="132" y="158">Yes, all our cakes come eggless!</text>
+      <rect x="40" y="178" width="380" height="34" rx="6" class="ba"/><text x="54" y="200" class="t-m">user:</text><text x="132" y="200">Price of plum cake?</text>
+      <line class="ln" x1="440" y1="118" x2="518" y2="118" marker-end="url(#f1)"/>
+      <rect x="520" y="84" width="220" height="68" rx="10" class="ba"/><text x="630" y="112" text-anchor="middle" class="t-b">Model</text><text x="630" y="132" text-anchor="middle" class="t-s">reads all, writes the next reply</text>
+      <line class="ln" x1="630" y1="152" x2="630" y2="186" marker-end="url(#f1)"/>
+      <rect x="520" y="188" width="220" height="34" rx="6" class="bw"/><text x="630" y="210" text-anchor="middle">assistant: "Plum cake is Rs 500."</text>
+    </svg>
+    <figcaption>The list is a script. The model's job is always the same: write the next assistant line.</figcaption>
+  </figure>
+  <div class="box real"><span class="tag">Real world</span>
+    <p>ChatGPT's "custom instructions" and a company's support-bot settings are both just a <strong>system</strong> message added above your chat. The owner of Sweet Crumbs will never type in the chat, but her rules live in the system message of every call.</p>
+  </div>
+  <div class="box analogy"><span class="tag">Analogy</span>
+    <p>A <strong>drama script</strong>. The <em>system</em> message is the director's note at the top ("you are a polite shopkeeper"). <em>User</em> and <em>assistant</em> are the two actors' lines. The model is handed the script and asked to write the next line.</p>
+  </div>
+  <div class="vid" data-vid="v1">
+    <div class="vid-head"><span class="ttl">Watch: a conversation is a script</span><span class="live">Animated video</span></div>
+    <div class="vid-stage"><svg class="dg" viewBox="0 0 760 252" role="img" aria-label="Animation: a script with a director note, user and assistant lines is handed to the model, which writes the next assistant line."><defs><marker id="mv1" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" class="ah"/></marker></defs><g id="v1-page" class="ve"><rect x="20" y="14" width="440" height="226" rx="10" class="b"/><text x="36" y="38" class="t-b">The script (messages list)</text></g><g id="v1-sys" class="ve"><rect x="36" y="50" width="408" height="34" rx="6" class="b"/><text x="48" y="72" class="t-m">system</text><text x="136" y="72">Director: you're the bakery's helper</text></g><g id="v1-u1" class="ve"><rect x="36" y="92" width="408" height="34" rx="6" class="ba"/><text x="48" y="114" class="t-m">user</text><text x="136" y="114">Eggless available?</text></g><g id="v1-a1" class="ve"><rect x="36" y="134" width="408" height="34" rx="6" class="bw"/><text x="48" y="156" class="t-m">assistant</text><text x="136" y="156">Yes, all our cakes come eggless!</text></g><g id="v1-u2" class="ve"><rect x="36" y="176" width="408" height="34" rx="6" class="ba"/><text x="48" y="198" class="t-m">user</text><text x="136" y="198">Price of plum cake?</text></g><g id="v1-ar" class="ve"><line class="ln" x1="460" y1="127" x2="518" y2="127" marker-end="url(#mv1)"/></g><g id="v1-model" class="ve" ><rect x="520" y="92" width="220" height="70" rx="8" class="ba"/><text x="630.0" y="123.0" text-anchor="middle" class="t-b">Model</text><text x="630.0" y="141.0" text-anchor="middle" class="t-s">reads the whole script</text></g><g id="v1-a2" class="ve"><line class="ln" x1="630" y1="162" x2="630" y2="190" marker-end="url(#mv1)"/><rect x="520" y="192" width="220" height="40" rx="6" class="bw"/><text x="630" y="217" text-anchor="middle">assistant: "Plum cake is Rs 500."</text></g></svg></div>
+    <p class="vid-cap" aria-live="polite">Press Play to start.</p>
+    <div class="vid-bar"><button class="btn vid-play" type="button">Play</button><div class="vid-prog" title="Click to jump"><div></div></div><span class="vid-time">0:00</span><label><input type="checkbox" class="vid-voice"> Narrate aloud</label></div>
+  </div>
+  <div class="box remember"><span class="tag">Remember</span>
+    <ul><li>system = instructions · user = the person · assistant = the model's earlier replies.</li><li>The model always writes the <em>next</em> assistant message.</li></ul>
+  </div>
+  <div class="quiz"><div class="quiz-head">Check yourself<span>2 questions</span></div>
+    <div class="mcq" data-ans="a"><p class="q">1. Where should the bakery owner's rules ("never promise a delivery time") go?</p><div class="choices">
+      <button type="button" data-k="a"><b>A</b>In the system message</button>
+      <button type="button" data-k="b"><b>B</b>In every user message the customer types</button>
+      <button type="button" data-k="c"><b>C</b>In an assistant message</button>
+      <button type="button" data-k="d"><b>D</b>In the model name</button></div>
+      <p class="why">The system message carries your instructions on every call; customers never see or need to type them.</p><button type="button" class="btn ghost retry">Try again</button></div>
+    <div class="mcq" data-ans="c"><p class="q">2. What does the <code>assistant</code> role hold in the messages list?</p><div class="choices">
+      <button type="button" data-k="a"><b>A</b>The developer's instructions</button>
+      <button type="button" data-k="b"><b>B</b>The API key</button>
+      <button type="button" data-k="c"><b>C</b>The model's earlier replies in the conversation</button>
+      <button type="button" data-k="d"><b>D</b>The customer's questions</button></div>
+      <p class="why">assistant messages are what the model said before. Sending them back is how the conversation continues.</p><button type="button" class="btn ghost retry">Try again</button></div>
+  </div>
+</section>
+
+<!-- ============ T2 ============ -->
+<section id="t2">
+  <h2><span class="lessonno">02</span>The system prompt: Role · Facts · Rules · Format</h2>
+  <p class="oneline">A good system prompt is a job description in four parts. Leave one out and you can predict exactly what goes wrong.</p>
+  <div class="tablewrap"><table>
+    <thead><tr><th>Part</th><th>What it says</th><th>Sweet Crumbs example</th><th>Missing it causes…</th></tr></thead>
+    <tbody>
+      <tr><td><strong>Role</strong></td><td>Who the model is, and for whom</td><td>You are the assistant for Sweet Crumbs Home Bakery.</td><td>Generic, robotic answers</td></tr>
+      <tr><td><strong>Facts</strong></td><td>What it must know</td><td>Orders need 24 hours' notice. All cakes come eggless. Plum cake Rs 500.</td><td>Made-up prices and policies</td></tr>
+      <tr><td><strong>Rules</strong></td><td>What it must and must never do</td><td>Never promise a delivery time. If unsure, say "I'll check with the owner."</td><td>Risky promises</td></tr>
+      <tr><td><strong>Format</strong></td><td>How the answer should look</td><td>Under 50 words, friendly, match the customer's language.</td><td>Long, rambling replies</td></tr>
+    </tbody>
+  </table></div>
+  <div class="sim" id="sim-pb">
+    <div class="sim-head"><span class="ttl">Prompt builder: switch parts off and watch the answer change</span><span class="live">Live</span></div>
+    <div class="sim-body">
+      <div class="toggles">
+        <label><input type="checkbox" id="pb-role" checked> <span><strong>Role</strong>: who it is</span></label>
+        <label><input type="checkbox" id="pb-facts" checked> <span><strong>Facts</strong>: menu, notice, eggless</span></label>
+        <label><input type="checkbox" id="pb-rules" checked> <span><strong>Rules</strong>: no time promises, "I'll check"</span></label>
+        <label><input type="checkbox" id="pb-format" checked> <span><strong>Format</strong>: under 50 words</span></label>
+      </div>
+      <div class="opts" id="pb-q" role="group" aria-label="Customer question"></div>
+      <p class="note" style="margin:6px 0 2px">System message sent</p>
+      <div class="result" id="pb-sys"></div>
+      <p class="note" style="margin:10px 0 2px">Bot reply (typical)</p>
+      <div class="sentence" id="pb-out"></div>
+      <div class="status" id="pb-st"></div>
+    </div>
+  </div>
+  <div class="box real"><span class="tag">Real world</span>
+    <p>Call-centre staff work from a <strong>script and a policy sheet</strong>: who you are, what we offer, what you must never say, how to greet. A system prompt is that sheet for the model. Companies keep their system prompts as carefully as their code.</p>
+  </div>
+  <div class="box analogy"><span class="tag">Analogy</span>
+    <p>A new employee's <strong>first-day briefing</strong>. Tell them who they work for, hand them the price list, explain the rules, show how to talk to customers. Skip any part and you'll see the mistake on day one.</p>
+  </div>
+  <div class="vid" data-vid="v2">
+    <div class="vid-head"><span class="ttl">Watch: briefing a new employee</span><span class="live">Animated video</span></div>
+    <div class="vid-stage"><svg class="dg" viewBox="0 0 760 302" role="img" aria-label="Animation: role, facts, rules and format cards brief a new employee, who then answers a customer correctly."><defs><marker id="mv2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" class="ah"/></marker></defs><g id="v2-title" class="ve"><text x="20" y="32" class="t-b">First-day briefing = the system prompt</text></g><g id="v2-role" class="ve" ><rect x="20" y="50" width="210" height="62" rx="8" class="bw"/><text x="125.0" y="77.0" text-anchor="middle" class="t-b">Role</text><text x="125.0" y="95.0" text-anchor="middle" class="t-s">Sweet Crumbs assistant</text></g><g id="v2-facts" class="ve" ><rect x="250" y="50" width="210" height="62" rx="8" class="bw"/><text x="355.0" y="77.0" text-anchor="middle" class="t-b">Facts</text><text x="355.0" y="95.0" text-anchor="middle" class="t-s">menu, 24 h notice, eggless</text></g><g id="v2-rules" class="ve" ><rect x="20" y="128" width="210" height="62" rx="8" class="bw"/><text x="125.0" y="155.0" text-anchor="middle" class="t-b">Rules</text><text x="125.0" y="173.0" text-anchor="middle" class="t-s">no time promises</text></g><g id="v2-fmt" class="ve" ><rect x="250" y="128" width="210" height="62" rx="8" class="bw"/><text x="355.0" y="155.0" text-anchor="middle" class="t-b">Format</text><text x="355.0" y="173.0" text-anchor="middle" class="t-s">short and friendly</text></g><g id="v2-emp" class="ve" ><rect x="520" y="50" width="220" height="70" rx="8" class="ba"/><text x="630.0" y="81.0" text-anchor="middle" class="t-b">New employee</text><text x="630.0" y="99.0" text-anchor="middle" class="t-s">= the model</text></g><g id="v2-q" class="ve"><rect x="20" y="210" width="720" height="36" rx="6" class="b"/><text x="34" y="233">Customer: "Eggless cake today evening?"</text></g><g id="v2-a" class="ve"><rect x="20" y="254" width="720" height="36" rx="6" class="ba"/><text x="34" y="277">Bot: "All our cakes come eggless, but we need 24 hours' notice. Book for tomorrow?"</text></g></svg></div>
+    <p class="vid-cap" aria-live="polite">Press Play to start.</p>
+    <div class="vid-bar"><button class="btn vid-play" type="button">Play</button><div class="vid-prog" title="Click to jump"><div></div></div><span class="vid-time">0:00</span><label><input type="checkbox" class="vid-voice"> Narrate aloud</label></div>
+  </div>
+  <div class="box remember"><span class="tag">Remember</span>
+    <ul><li>Role → identity. Facts → no guessing. Rules → no risky promises. Format → right length and tone.</li><li>When a reply is wrong, ask: which of the four parts was missing or unclear?</li></ul>
+  </div>
+  <div class="quiz"><div class="quiz-head">Check yourself<span>2 questions</span></div>
+    <div class="mcq" data-ans="b"><p class="q">1. The bot quotes "Rs 800–1,200" for a plum cake that actually costs Rs 500. Which part of the prompt is missing?</p><div class="choices">
+      <button type="button" data-k="a"><b>A</b>Role</button>
+      <button type="button" data-k="b"><b>B</b>Facts</button>
+      <button type="button" data-k="c"><b>C</b>Format</button>
+      <button type="button" data-k="d"><b>D</b>Temperature</button></div>
+      <p class="why">Without the price in Facts, the model guesses something plausible. Give it the real number.</p><button type="button" class="btn ghost retry">Try again</button></div>
+    <div class="mcq" data-ans="d"><p class="q">2. The bot promises "delivery in 30 minutes" even though it knows the menu and prices. What should you add?</p><div class="choices">
+      <button type="button" data-k="a"><b>A</b>More facts about cakes</button>
+      <button type="button" data-k="b"><b>B</b>A higher temperature</button>
+      <button type="button" data-k="c"><b>C</b>A longer Role description</button>
+      <button type="button" data-k="d"><b>D</b>A rule: "Never promise a delivery time; say you'll check with the owner"</button></div>
+      <p class="why">Knowing the facts isn't the same as knowing the limits. Rules say what it must never do.</p><button type="button" class="btn ghost retry">Try again</button></div>
+  </div>
+</section>
+
+<!-- ============ T3 ============ -->
+<section id="t3">
+  <h2><span class="lessonno">03</span>Few-shot examples: show, don't just tell</h2>
+  <p class="oneline">Put two or three worked examples in the messages and the model copies their pattern, format included.</p>
+  <p>Instructions alone ("classify this message") leave room for interpretation: one reply says "This looks like an order", another says "Category: Order". Your code can't use answers that change shape. <strong>Few-shot prompting</strong> adds example question–answer pairs as earlier user/assistant turns, so the model sees exactly what a correct answer looks like.</p>
+<pre><code class="py">messages = [
+    {"role": "system", "content": "Label the customer message with one word: order, question or complaint."},
+    # three examples = "few shots"
+    {"role": "user", "content": "need 2 plum cakes for friday"},     {"role": "assistant", "content": "order"},
+    {"role": "user", "content": "do you have eggless?"},             {"role": "assistant", "content": "question"},
+    {"role": "user", "content": "the cake was dry yesterday"},       {"role": "assistant", "content": "complaint"},
+    # the real message
+    {"role": "user", "content": new_message},
+]</code></pre>
+  <div class="sim" id="sim-fs">
+    <div class="sim-head"><span class="ttl">Zero-shot vs few-shot: can your code use the answer?</span><span class="live">Live</span></div>
+    <div class="sim-body">
+      <div class="row"><label style="font-weight:400;display:flex;gap:8px;align-items:center"><input type="checkbox" id="fs-on"> Add the 3 examples (few-shot)</label><button class="btn" type="button" id="fs-run">Label 4 new messages</button></div>
+      <div class="tablewrap"><table><thead><tr><th>Customer message</th><th>Model's answer</th><th>Code can use it?</th></tr></thead><tbody id="fs-body"></tbody></table></div>
+      <div class="status" id="fs-st">Run it once without examples, then tick the box and run again.</div>
+    </div>
+  </div>
+  <div class="box real"><span class="tag">Real world</span>
+    <p>Support teams auto-label incoming emails as "refund", "delivery" or "technical" so they reach the right person. A handful of labelled examples in the prompt is often enough to make those labels consistent. Sweet Crumbs will use exactly this to route messages to the right agent on Day 6.</p>
+  </div>
+  <div class="box analogy"><span class="tag">Analogy</span>
+    <p>Training a <strong>new cashier</strong>: you don't explain billing for an hour, you show two finished bills. By the third customer, they write bills in exactly the same layout.</p>
+  </div>
+  <div class="vid" data-vid="v3">
+    <div class="vid-head"><span class="ttl">Watch: learning from three examples</span><span class="live">Animated video</span></div>
+    <div class="vid-stage"><svg class="dg" viewBox="0 0 760 250" role="img" aria-label="Animation: three example messages with one-word labels are shown, then a new message gets a label in exactly the same format."><defs><marker id="mv3" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" class="ah"/></marker></defs><g id="v3-rule" class="ve"><text x="20" y="30" class="t-b">Instruction: label each message with one word</text></g><g id="v3-e1" class="ve"><rect x="20" y="50" width="430" height="36" rx="6" class="b"/><text x="34" y="73">"need 2 plum cakes for friday"</text><line class="ln" x1="450" y1="68" x2="498" y2="68" marker-end="url(#mv3)"/><rect x="500" y="50" width="140" height="36" rx="6" class="bw"/><text x="570" y="73" text-anchor="middle" class="t-m">order</text><text x="652" y="73" class="t-s">example</text></g><g id="v3-e2" class="ve"><rect x="20" y="96" width="430" height="36" rx="6" class="b"/><text x="34" y="119">"do you have eggless?"</text><line class="ln" x1="450" y1="114" x2="498" y2="114" marker-end="url(#mv3)"/><rect x="500" y="96" width="140" height="36" rx="6" class="bw"/><text x="570" y="119" text-anchor="middle" class="t-m">question</text><text x="652" y="119" class="t-s">example</text></g><g id="v3-e3" class="ve"><rect x="20" y="142" width="430" height="36" rx="6" class="b"/><text x="34" y="165">"the cake was dry yesterday"</text><line class="ln" x1="450" y1="160" x2="498" y2="160" marker-end="url(#mv3)"/><rect x="500" y="142" width="140" height="36" rx="6" class="bw"/><text x="570" y="165" text-anchor="middle" class="t-m">complaint</text><text x="652" y="165" class="t-s">example</text></g><g id="v3-new" class="ve"><rect x="20" y="200" width="430" height="36" rx="6" class="ba"/><text x="34" y="223">New: "do u deliver near JNTU?"</text><line class="ln" x1="450" y1="218" x2="498" y2="218" marker-end="url(#mv3)"/></g><g id="v3-ans" class="ve"><rect x="500" y="200" width="140" height="36" rx="6" class="ba"/><text x="570" y="223" text-anchor="middle" class="t-m">question</text><text x="652" y="223" class="t-ok">same shape</text></g></svg></div>
+    <p class="vid-cap" aria-live="polite">Press Play to start.</p>
+    <div class="vid-bar"><button class="btn vid-play" type="button">Play</button><div class="vid-prog" title="Click to jump"><div></div></div><span class="vid-time">0:00</span><label><input type="checkbox" class="vid-voice"> Narrate aloud</label></div>
+  </div>
+  <div class="box remember"><span class="tag">Remember</span>
+    <ul><li>Zero-shot = instructions only. Few-shot = instructions + 2–5 examples.</li><li>Examples fix the <em>format</em>, which is what your code depends on.</li></ul>
+  </div>
+  <div class="quiz"><div class="quiz-head">Check yourself<span>2 questions</span></div>
+    <div class="mcq" data-ans="c"><p class="q">1. What is "few-shot" prompting?</p><div class="choices">
+      <button type="button" data-k="a"><b>A</b>Calling the API only a few times</button>
+      <button type="button" data-k="b"><b>B</b>Training the model on a small dataset</button>
+      <button type="button" data-k="c"><b>C</b>Including a few example inputs and correct outputs in the prompt</button>
+      <button type="button" data-k="d"><b>D</b>Using a smaller model</button></div>
+      <p class="why">Few-shot = examples inside the prompt. Nothing is trained; the model copies the pattern for this call.</p><button type="button" class="btn ghost retry">Try again</button></div>
+    <div class="mcq" data-ans="a"><p class="q">2. Your classifier sometimes replies "Order", sometimes "This is an order request." Best fix?</p><div class="choices">
+      <button type="button" data-k="a"><b>A</b>Add a few example messages with one-word answers</button>
+      <button type="button" data-k="b"><b>B</b>Raise the temperature</button>
+      <button type="button" data-k="c"><b>C</b>Remove the system message</button>
+      <button type="button" data-k="d"><b>D</b>Send the message twice</button></div>
+      <p class="why">Examples show the exact shape of a correct answer. Keep temperature low too.</p><button type="button" class="btn ghost retry">Try again</button></div>
+  </div>
+</section>
+
+<!-- ============ T4 ============ -->
+<section id="t4">
+  <h2><span class="lessonno">04</span>Asking for JSON: answers your code can use</h2>
+  <p class="oneline">People read sentences; programs read fields. Ask the model to reply in JSON, then turn it into a Python dict with <code>json.loads</code>.</p>
+  <p>To save an order to a sheet, your code needs <code>name</code>, <code>item</code>, <code>qty</code>, <code>date</code> as separate fields, not a paragraph. <strong>JSON</strong> (JavaScript Object Notation) is the standard text format for that: keys in double quotes, values as text, numbers, <code>true</code>/<code>false</code>, lists or nested objects.</p>
+<pre><code class="py">import json
+
+SYSTEM = """Extract the order from the customer's message.
+Return ONLY JSON, no other text, with these keys:
+name (text), item (text), qty (number), date (text), eggless (true/false)."""
+
+reply = response.choices[0].message.content     # a string that looks like JSON
+order = json.loads(reply)                        # string → Python dict
+print(order["item"], order["qty"])               # plum cake 2</code></pre>
+  <div class="sim" id="sim-js">
+    <div class="sim-head"><span class="ttl">Messy message → JSON → Python dict</span><span class="live">Live</span></div>
+    <div class="sim-body">
+      <div class="opts" id="js-m" role="group" aria-label="Customer message"></div>
+      <label style="font-weight:400;display:flex;gap:8px;align-items:center"><input type="checkbox" id="js-fence"> The model wraps its reply in <code>```json</code> fences (a common slip)</label>
+      <div class="two" style="margin-top:8px">
+        <div><p class="note" style="margin:0 0 2px">Model reply (a string)</p><div class="result" id="js-raw"></div></div>
+        <div><p class="note" style="margin:0 0 2px">After <code>json.loads(reply)</code></p><div class="result" id="js-dict"></div></div>
+      </div>
+      <div class="status" id="js-st"></div>
+    </div>
+  </div>
+  <div class="box real"><span class="tag">Real world</span>
+    <p>A <strong>Google Form</strong> versus a <strong>WhatsApp message</strong>. The form gives the owner clean columns; the chat gives her a story to retype. From Day 4 onwards, every agent turns chat into form-like JSON so it can save, calculate and send.</p>
+  </div>
+  <div class="box analogy"><span class="tag">Analogy</span>
+    <p>A <strong>letter</strong> versus an <strong>application form</strong>. Both carry the same information, but only the form has labelled boxes a clerk (your code) can process without reading the whole thing.</p>
+  </div>
+  <div class="vid" data-vid="v4">
+    <div class="vid-head"><span class="ttl">Watch: from a chat message to clean fields</span><span class="live">Animated video</span></div>
+    <div class="vid-stage"><svg class="dg" viewBox="0 0 760 230" role="img" aria-label="Animation: a messy chat message is turned into JSON fields one by one, then saved as a spreadsheet row."><defs><marker id="mv4" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" class="ah"/></marker></defs><g id="v4-chat" class="ve"><rect x="20" y="40" width="210" height="96" rx="10" class="b"/><text x="34" y="66">"hi ravi here, need 2</text><text x="34" y="86">plum cakes for 24th dec,</text><text x="34" y="106">eggless pls"</text><text x="34" y="126" class="t-s">WhatsApp-style message</text></g><g id="v4-ar1" class="ve"><line class="ln" x1="230" y1="88" x2="268" y2="88" marker-end="url(#mv4)"/></g><g id="v4-form" class="ve"><rect x="270" y="20" width="250" height="196" rx="10" class="b"/><text x="286" y="42" class="t-b">{  JSON  }</text></g><g id="v4-f1" class="ve"><rect x="286" y="54" width="218" height="26" rx="5" class="bw"/><text x="296" y="72" class="t-m">"name": "Ravi"</text></g><g id="v4-f2" class="ve"><rect x="286" y="85" width="218" height="26" rx="5" class="bw"/><text x="296" y="103" class="t-m">"item": "plum cake"</text></g><g id="v4-f3" class="ve"><rect x="286" y="116" width="218" height="26" rx="5" class="bw"/><text x="296" y="134" class="t-m">"qty": 2</text></g><g id="v4-f4" class="ve"><rect x="286" y="147" width="218" height="26" rx="5" class="bw"/><text x="296" y="165" class="t-m">"date": "24 Dec"</text></g><g id="v4-f5" class="ve"><rect x="286" y="178" width="218" height="26" rx="5" class="bw"/><text x="296" y="196" class="t-m">"eggless": true</text></g><g id="v4-ar2" class="ve"><line class="ln" x1="520" y1="118" x2="558" y2="118" marker-end="url(#mv4)"/></g><g id="v4-row" class="ve"><rect x="560" y="70" width="180" height="96" rx="10" class="ba"/><text x="650" y="96" text-anchor="middle" class="t-b">Google Sheet row</text><text x="650" y="120" text-anchor="middle" class="t-s">Ravi | plum cake | 2</text><text x="650" y="138" text-anchor="middle" class="t-s">24 Dec | eggless</text></g></svg></div>
+    <p class="vid-cap" aria-live="polite">Press Play to start.</p>
+    <div class="vid-bar"><button class="btn vid-play" type="button">Play</button><div class="vid-prog" title="Click to jump"><div></div></div><span class="vid-time">0:00</span><label><input type="checkbox" class="vid-voice"> Narrate aloud</label></div>
+  </div>
+  <div class="box remember"><span class="tag">Remember</span>
+    <ul><li>Name every key and its type in the prompt; say "Return ONLY JSON".</li><li><code>json.loads</code> turns the text into a dict. Wrap it in <code>try/except</code>: models sometimes add extra text.</li></ul>
+  </div>
+  <div class="quiz"><div class="quiz-head">Check yourself<span>2 questions</span></div>
+    <div class="mcq" data-ans="b"><p class="q">1. What does <code>json.loads(reply)</code> do?</p><div class="choices">
+      <button type="button" data-k="a"><b>A</b>Sends the reply to the model again</button>
+      <button type="button" data-k="b"><b>B</b>Converts a JSON-formatted string into a Python dict</button>
+      <button type="button" data-k="c"><b>C</b>Saves the reply to a file</button>
+      <button type="button" data-k="d"><b>D</b>Checks whether the order is correct</button></div>
+      <p class="why">loads = load from a string. The result is a dict you can index: <code>order["qty"]</code>.</p><button type="button" class="btn ghost retry">Try again</button></div>
+    <div class="mcq" data-ans="d"><p class="q">2. <code>json.loads</code> fails with <code>JSONDecodeError</code>. The reply starts with "Sure! Here is the JSON:". What's the best fix?</p><div class="choices">
+      <button type="button" data-k="a"><b>A</b>Raise the temperature</button>
+      <button type="button" data-k="b"><b>B</b>Remove the keys from the prompt</button>
+      <button type="button" data-k="c"><b>C</b>Use a bigger context window</button>
+      <button type="button" data-k="d"><b>D</b>Say "Return ONLY JSON, no other text", and catch the error with try/except</button></div>
+      <p class="why">Extra words break parsing. Tighten the instruction, keep temperature low, and handle failures gracefully.</p><button type="button" class="btn ghost retry">Try again</button></div>
+  </div>
+</section>
+
+<!-- ============ T5 ============ -->
+<section id="t5">
+  <h2><span class="lessonno">05</span>Memory by hand: the chat loop</h2>
+  <p class="oneline">To make a chatbot remember, keep a list of messages and append every question and every reply to it.</p>
+  <p>Day 1 showed that the model is stateless. Now you write the receptionist: a <code>history</code> list that starts with the system message, grows by two messages per turn, and is sent in full every time. Because history grows forever, real apps <strong>trim</strong> it: keep the system message plus the last few turns.</p>
+  <figure>
+    <svg class="dg flow" viewBox="0 0 760 210" role="img" aria-label="Chat loop: the user types, the code appends the message to history, sends the whole history to the model, appends the reply to history and shows it, then waits for the next message.">
+      <defs><marker id="f5" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" class="ah"/></marker></defs>
+      <rect x="20" y="70" width="120" height="60" rx="8" class="b"/><text x="80" y="96" text-anchor="middle" class="t-b">User types</text><text x="80" y="114" text-anchor="middle" class="t-s">input()</text>
+      <rect x="170" y="70" width="140" height="60" rx="8" class="bw"/><text x="240" y="96" text-anchor="middle" class="t-b">Append user</text><text x="240" y="114" text-anchor="middle" class="t-s">history.append(...)</text>
+      <rect x="340" y="70" width="140" height="60" rx="8" class="ba"/><text x="410" y="96" text-anchor="middle" class="t-b">Send all</text><text x="410" y="114" text-anchor="middle" class="t-s">create(messages=history)</text>
+      <rect x="510" y="70" width="110" height="60" rx="8" class="ba"/><text x="565" y="96" text-anchor="middle" class="t-b">Model</text><text x="565" y="114" text-anchor="middle" class="t-s">writes reply</text>
+      <rect x="640" y="70" width="104" height="60" rx="8" class="bw"/><text x="692" y="96" text-anchor="middle" class="t-b">Append reply</text><text x="692" y="114" text-anchor="middle" class="t-s">+ print it</text>
+      <line class="ln" x1="140" y1="100" x2="168" y2="100" marker-end="url(#f5)"/><line class="ln" x1="310" y1="100" x2="338" y2="100" marker-end="url(#f5)"/><line class="ln" x1="480" y1="100" x2="508" y2="100" marker-end="url(#f5)"/><line class="ln" x1="620" y1="100" x2="638" y2="100" marker-end="url(#f5)"/>
+      <path class="ln" d="M692 130 V176 H80 V132" marker-end="url(#f5)"/><text x="386" y="196" text-anchor="middle" class="t-s">loop: wait for the next message (history is now 2 messages longer)</text>
+      <rect x="250" y="16" width="260" height="34" rx="6" class="bd"/><text x="380" y="38" text-anchor="middle">Optional: trim to system + last N turns</text>
+      <line class="dash" x1="380" y1="50" x2="410" y2="68"/>
+    </svg>
+    <figcaption>The loop every chatbot runs. The model never changes; the list does.</figcaption>
+  </figure>
+<pre><code class="py">history = [{"role": "system", "content": SYSTEM}]
+MAX_TURNS = 6                                     # keep the last 6 messages
+
+def chat(user_text: str) -> str:
+    history.append({"role": "user", "content": user_text})
+    recent = [history[0]] + history[1:][-MAX_TURNS:] # system + last few
+    response = client.chat.completions.create(
+        model="openai/gpt-oss-20b", messages=recent, temperature=0.3)
+    reply = response.choices[0].message.content
+    history.append({"role": "assistant", "content": reply})
+    return reply</code></pre>
+  <div class="sim" id="sim-cl">
+    <div class="sim-head"><span class="ttl">Chat loop simulator: what does the model actually receive?</span><span class="live">Live</span></div>
+    <div class="sim-body">
+      <div class="row"><input type="text" id="cl-in" value="Hi, my name is Ravi" aria-label="Your message" style="flex:1;min-width:220px"><button class="btn" type="button" id="cl-send">Send</button><button class="btn ghost" type="button" id="cl-reset">Reset</button></div>
+      <div class="opts" id="cl-sug" role="group" aria-label="Suggested messages"></div>
+      <div class="toggles">
+        <label><input type="checkbox" id="cl-resend" checked> <span>My code resends the history</span></label>
+        <label><span>Keep last <select id="cl-max"><option value="99">all</option><option value="4">4</option><option value="2">2</option></select> messages</span></label>
+      </div>
+      <div class="two">
+        <div><p class="note" style="margin:0 0 2px">Messages sent in this call (+ the reply)</p><div class="hist" id="cl-hist"></div></div>
+        <div><div class="stats"><div class="stat"><b id="cl-n">0</b><span>messages sent</span></div><div class="stat"><b id="cl-tk">0</b><span>≈ tokens this call</span></div><div class="stat"><b id="cl-tot">0</b><span>≈ tokens so far</span></div></div><div class="status" id="cl-st">Send "Hi, my name is Ravi", then "What is my name?".</div></div>
+      </div>
+    </div>
+  </div>
+  <div class="box real"><span class="tag">Real world</span>
+    <p>Long support chats get slower and costlier because every message carries the whole history. That's why apps summarise or drop old turns. For Sweet Crumbs, the last few turns are enough to remember the customer's name and order.</p>
+  </div>
+  <div class="box analogy"><span class="tag">Analogy</span>
+    <p>A <strong>class notebook</strong> you read aloud from the first page every time you ask the teacher a question. Useful, but after 50 pages you start reading only the last few, and anything on the torn-out pages is forgotten.</p>
+  </div>
+  <div class="vid" data-vid="v5">
+    <div class="vid-head"><span class="ttl">Watch: the chat loop, and what trimming forgets</span><span class="live">Animated video</span></div>
+    <div class="vid-stage"><svg class="dg" viewBox="0 0 760 244" role="img" aria-label="Animation: each message is appended to a history list that is sent to the model; when old turns are trimmed, the customer name is forgotten."><defs><marker id="mv5" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" class="ah"/></marker></defs><g id="v5-user" class="ve" ><rect x="20" y="40" width="130" height="56" rx="8" class="b"/><text x="85.0" y="64.0" text-anchor="middle" class="t-b">User types</text><text x="85.0" y="82.0" text-anchor="middle" class="t-s">a new message</text></g><g id="v5-ar1" class="ve"><line class="ln" x1="150" y1="68" x2="188" y2="68" marker-end="url(#mv5)"/></g><g id="v5-hist" class="ve"><rect x="190" y="20" width="220" height="210" rx="10" class="b"/><text x="300" y="42" text-anchor="middle" class="t-b">history list</text></g><g id="v5-m0" class="ve"><rect x="204" y="52" width="192" height="24" rx="5" class="b"/><text x="214" y="69" class="t-s">system</text></g><g id="v5-m1" class="ve"><rect x="204" y="81" width="192" height="24" rx="5" class="ba"/><text x="214" y="98" class="t-s">user: Hi, I'm Ravi</text></g><g id="v5-m2" class="ve"><rect x="204" y="110" width="192" height="24" rx="5" class="bw"/><text x="214" y="127" class="t-s">assistant: Hi Ravi!</text></g><g id="v5-m3" class="ve"><rect x="204" y="139" width="192" height="24" rx="5" class="ba"/><text x="214" y="156" class="t-s">user: 2 plum cakes</text></g><g id="v5-m4" class="ve"><rect x="204" y="168" width="192" height="24" rx="5" class="bw"/><text x="214" y="185" class="t-s">assistant: Noted!</text></g><g id="v5-m5" class="ve"><rect x="204" y="197" width="192" height="24" rx="5" class="ba"/><text x="214" y="214" class="t-s">user: My name?</text></g><g id="v5-ar2" class="ve"><line class="ln" x1="410" y1="125" x2="468" y2="125" marker-end="url(#mv5)"/></g><g id="v5-model" class="ve" ><rect x="470" y="92" width="130" height="66" rx="8" class="ba"/><text x="535.0" y="121.0" text-anchor="middle" class="t-b">Model</text><text x="535.0" y="139.0" text-anchor="middle" class="t-s">sees only this list</text></g><g id="v5-rep" class="ve"><rect x="620" y="100" width="122" height="50" rx="8" class="bw"/><text id="v5-rt" x="681" y="122" text-anchor="middle" class="t-b">"You're Ravi!"</text><text x="681" y="140" text-anchor="middle" class="t-s">reply</text></g><g id="v5-cut" class="ve"><line x1="196" y1="78" x2="404" y2="78" stroke="var(--danger)" stroke-width="2" stroke-dasharray="6 4"/><text x="420" y="64" class="t-red">trimmed: oldest turns dropped</text></g></svg></div>
+    <p class="vid-cap" aria-live="polite">Press Play to start.</p>
+    <div class="vid-bar"><button class="btn vid-play" type="button">Play</button><div class="vid-prog" title="Click to jump"><div></div></div><span class="vid-time">0:00</span><label><input type="checkbox" class="vid-voice"> Narrate aloud</label></div>
+  </div>
+  <div class="box remember"><span class="tag">Remember</span>
+    <ul><li>Start with the system message; append user, call, append assistant, repeat.</li><li>Trim old turns to control cost, but anything trimmed is forgotten.</li></ul>
+  </div>
+  <div class="quiz"><div class="quiz-head">Check yourself<span>2 questions</span></div>
+    <div class="mcq" data-ans="b"><p class="q">1. After 3 full turns (3 questions and 3 replies), how many messages are in <code>history</code>, counting the system message?</p><div class="choices">
+      <button type="button" data-k="a"><b>A</b>3</button>
+      <button type="button" data-k="b"><b>B</b>7</button>
+      <button type="button" data-k="c"><b>C</b>6</button>
+      <button type="button" data-k="d"><b>D</b>4</button></div>
+      <p class="why">1 system + 3 user + 3 assistant = 7. It grows by two every turn.</p><button type="button" class="btn ghost retry">Try again</button></div>
+    <div class="mcq" data-ans="c"><p class="q">2. You keep only the last 2 messages to save tokens. The customer gave their name 5 turns ago. What happens?</p><div class="choices">
+      <button type="button" data-k="a"><b>A</b>The model still remembers it from training</button>
+      <button type="button" data-k="b"><b>B</b>The API stores it for you</button>
+      <button type="button" data-k="c"><b>C</b>The bot forgets the name, because it isn't in the messages sent</button>
+      <button type="button" data-k="d"><b>D</b>The call fails</button></div>
+      <p class="why">The model only knows what is in this call's messages. Trimming saves tokens but drops old facts; keep important facts (like the name) another way.</p><button type="button" class="btn ghost retry">Try again</button></div>
+  </div>
+</section>
+
+<!-- ============ T6 ============ -->
+<section id="t6">
+  <h2><span class="lessonno">06</span>Python for agents ①: dicts and JSON</h2>
+  <p class="oneline">A dict stores data as key → value pairs. It is how agents hold menus, orders and messages.</p>
+<pre><code class="py">MENU = {"plum cake": 500, "chocolate cake": 650, "cupcake": 80}   # key → value
+
+MENU["plum cake"]                  # 500
+MENU.get("donut", "not on menu")   # 'not on menu'  (no crash)
+MENU["donut"]                      # KeyError: 'donut'  (crash!)
+
+order = {"name": "Ravi", "item": "plum cake", "qty": 2, "eggless": True}
+order["qty"] * MENU[order["item"]] # 1000
+
+import json
+text = json.dumps(order)           # dict → JSON string, to send or save
+back = json.loads(text)            # JSON string → dict</code></pre>
+  <p>You've already used dicts: every message is one (<code>{"role": ..., "content": ...}</code>) and <code>messages</code> is a <strong>list of dicts</strong>. JSON looks almost the same but is <strong>text</strong>: double quotes only, <code>true</code>/<code>false</code>/<code>null</code> instead of <code>True</code>/<code>False</code>/<code>None</code>.</p>
+  <div class="sim" id="sim-dc">
+    <div class="sim-head"><span class="ttl">Look it up in the menu</span><span class="live">Live</span></div>
+    <div class="sim-body">
+      <div class="row"><input type="text" id="dc-k" value="plum cake" aria-label="Key to look up" style="flex:1;min-width:180px"><button class="btn" type="button" id="dc-br">MENU[key]</button><button class="btn ghost" type="button" id="dc-get">MENU.get(key, "not on menu")</button><button class="btn ghost" type="button" id="dc-dump">json.dumps(MENU)</button></div>
+      <div class="result" id="dc-out">MENU = {"plum cake": 500, "chocolate cake": 650, "cupcake": 80}</div>
+      <div class="status" id="dc-st">Try "plum cake", then "Plum Cake", then "donut".</div>
+    </div>
+  </div>
+  <div class="box real"><span class="tag">Real world</span>
+    <p>Every API you'll touch in this workshop speaks JSON: the request you send to Groq, the reply it returns, Telegram messages, Google Sheets rows. In Python they all become dicts and lists.</p>
+  </div>
+  <div class="box analogy"><span class="tag">Analogy</span>
+    <p>Your <strong>phone contacts</strong>: look up a name (key) to get a number (value). Search for a name that isn't saved and you get nothing; <code>.get()</code> is the polite "contact not found" instead of the phone crashing.</p>
+  </div>
+  <div class="vid" data-vid="v6">
+    <div class="vid-head"><span class="ttl">Watch: looking things up in a dict</span><span class="live">Animated video</span></div>
+    <div class="vid-stage"><svg class="dg" viewBox="0 0 760 244" role="img" aria-label="Animation: looking up a key in the menu dict returns a price, a missing key crashes, get returns a safe default, and json.dumps turns the dict into text."><defs><marker id="mv6" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" class="ah"/></marker></defs><g id="v6-menu" class="ve"><rect x="20" y="20" width="260" height="150" rx="10" class="b"/><text x="36" y="44" class="t-b">MENU (dict)</text><g id="v6-r1"><rect x="36" y="58" width="228" height="28" rx="5" class="bw"/><text x="48" y="77" class="t-m">"plum cake"</text><text x="250" y="77" text-anchor="end" class="t-m">500</text></g><g id="v6-r2"><rect x="36" y="92" width="228" height="28" rx="5" class="bw"/><text x="48" y="111" class="t-m">"chocolate cake"</text><text x="250" y="111" text-anchor="end" class="t-m">650</text></g><g id="v6-r3"><rect x="36" y="126" width="228" height="28" rx="5" class="bw"/><text x="48" y="145" class="t-m">"cupcake"</text><text x="250" y="145" text-anchor="end" class="t-m">80</text></g></g><g id="v6-q1" class="ve"><text x="310" y="78" class="t-m">MENU["plum cake"]</text><line class="ln" x1="300" y1="72" x2="268" y2="72" marker-end="url(#mv6)"/><text x="520" y="78" class="t-ok">→ 500</text></g><g id="v6-q2" class="ve"><text x="310" y="118" class="t-m">MENU["donut"]</text><text x="520" y="118" class="t-red">→ KeyError (crash)</text></g><g id="v6-q3" class="ve"><text x="310" y="152" class="t-m">MENU.get("donut", "not on menu")</text><text x="600" y="152" class="t-ok">→ safe</text></g><g id="v6-js" class="ve"><rect x="20" y="190" width="720" height="40" rx="8" class="ba"/><text x="34" y="215" class="t-m">json.dumps(MENU) → '{"plum cake": 500, "chocolate cake": 650, "cupcake": 80}'  (text)</text></g></svg></div>
+    <p class="vid-cap" aria-live="polite">Press Play to start.</p>
+    <div class="vid-bar"><button class="btn vid-play" type="button">Play</button><div class="vid-prog" title="Click to jump"><div></div></div><span class="vid-time">0:00</span><label><input type="checkbox" class="vid-voice"> Narrate aloud</label></div>
+  </div>
+  <div class="box remember"><span class="tag">Remember</span>
+    <ul><li><code>d[key]</code> crashes if the key is missing; <code>d.get(key, default)</code> doesn't.</li><li>Keys are exact: "Plum Cake" ≠ "plum cake". Normalise with <code>.lower().strip()</code>.</li><li><code>dumps</code> = dict → text; <code>loads</code> = text → dict.</li></ul>
+  </div>
+  <div class="quiz"><div class="quiz-head">Check yourself<span>2 questions</span></div>
+    <div class="mcq" data-ans="a"><p class="q">1. <code>MENU = {"cupcake": 80}</code>. What does <code>MENU.get("donut", 0)</code> return?</p><div class="choices">
+      <button type="button" data-k="a"><b>A</b>0</button>
+      <button type="button" data-k="b"><b>B</b>KeyError</button>
+      <button type="button" data-k="c"><b>C</b>None</button>
+      <button type="button" data-k="d"><b>D</b>80</button></div>
+      <p class="why"><code>.get</code> returns the default you gave (0) when the key is missing, without crashing.</p><button type="button" class="btn ghost retry">Try again</button></div>
+    <div class="mcq" data-ans="c"><p class="q">2. Which is valid JSON?</p><div class="choices">
+      <button type="button" data-k="a"><b>A</b><code>{'item': 'cupcake', 'eggless': True}</code></button>
+      <button type="button" data-k="b"><b>B</b><code>{item: "cupcake", eggless: true}</code></button>
+      <button type="button" data-k="c"><b>C</b><code>{"item": "cupcake", "eggless": true}</code></button>
+      <button type="button" data-k="d"><b>D</b><code>{"item": "cupcake", "eggless": True}</code></button></div>
+      <p class="why">JSON needs double-quoted keys and strings, and lowercase <code>true</code>. Option A is a Python dict, not JSON.</p><button type="button" class="btn ghost retry">Try again</button></div>
+  </div>
+</section>
+
+<!-- ============ T7 ============ -->
+<section id="t7">
+  <h2><span class="lessonno">07</span>Python for agents ②: functions, type hints and docstrings</h2>
+  <p class="oneline">A function is a named machine: inputs in, output out. Type hints and a docstring say what goes in and what comes out.</p>
+<pre><code class="py">def get_price(item: str, qty: int = 1) -> int:
+    """Return the total price in rupees for qty of an item on the Sweet Crumbs menu."""
+    return MENU[item.lower().strip()] * qty
+
+get_price("cupcake", 6)    # 480
+get_price("Plum Cake")     # 500  (qty defaults to 1)</code></pre>
+  <div class="tablewrap"><table>
+    <thead><tr><th>Piece</th><th>Meaning</th></tr></thead>
+    <tbody>
+      <tr><td><code>item: str</code>, <code>qty: int = 1</code></td><td>Parameters with <strong>type hints</strong> and a default value</td></tr>
+      <tr><td><code>-> int</code></td><td>What it returns</td></tr>
+      <tr><td><code>"""Return the total…"""</code></td><td>The <strong>docstring</strong>: one line saying what the function does</td></tr>
+    </tbody>
+  </table></div>
+  <div class="box lens"><span class="tag">Why agents care</span><p>On Day 4 you'll turn functions like this into <strong>tools</strong> the model can call. The model never sees your code; it decides when and how to call a tool by reading its <strong>name, type hints and docstring</strong>. A vague docstring means the model calls the wrong tool.</p></div>
+  <div class="sim" id="sim-fn">
+    <div class="sim-head"><span class="ttl">Call get_price, and see why type hints are only labels</span><span class="live">Live</span></div>
+    <div class="sim-body">
+      <div class="row"><label for="fn-item">item</label><select id="fn-item"><option>plum cake</option><option>chocolate cake</option><option selected>cupcake</option></select><label for="fn-qty">qty</label><input type="text" id="fn-qty" value="6" style="width:90px"><button class="btn" type="button" id="fn-go">Call</button></div>
+      <div class="result" id="fn-out"></div>
+      <div class="status" id="fn-st">Try qty = 6, then qty = "six".</div>
+    </div>
+  </div>
+  <div class="box real"><span class="tag">Real world</span>
+    <p>A UPI app has one function to check a balance and another to send money; each takes clear inputs and returns one result. Sweet Crumbs' agents will have <code>get_price</code>, <code>is_open</code>, <code>log_order</code>: small, well-named functions with one job each.</p>
+  </div>
+  <div class="box analogy"><span class="tag">Analogy</span>
+    <p>A <strong>vending machine</strong>. The slots are labelled (coins here, choice there) and it gives back one item. Type hints are those labels; the docstring is the sticker explaining what the machine sells.</p>
+  </div>
+  <div class="vid" data-vid="v7">
+    <div class="vid-head"><span class="ttl">Watch: a function is a labelled machine</span><span class="live">Animated video</span></div>
+    <div class="vid-stage"><svg class="dg" viewBox="0 0 760 250" role="img" aria-label="Animation: the inputs cupcake and 6 go into get_price, labelled with type hints, and 480 comes out; the docstring explains what it does."><defs><marker id="mv7" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" class="ah"/></marker></defs><g id="v7-in" class="ve"><rect x="20" y="70" width="150" height="40" rx="6" class="bw"/><text x="95" y="95" text-anchor="middle" class="t-m">"cupcake"</text><rect x="20" y="120" width="150" height="40" rx="6" class="bw"/><text x="95" y="145" text-anchor="middle" class="t-m">6</text></g><g id="v7-ar1" class="ve"><line class="ln" x1="170" y1="90" x2="248" y2="100" marker-end="url(#mv7)"/><line class="ln" x1="170" y1="140" x2="248" y2="130" marker-end="url(#mv7)"/></g><g id="v7-fn" class="ve"><rect x="250" y="40" width="250" height="150" rx="12" class="ba"/><text x="375" y="66" text-anchor="middle" class="t-b">get_price</text><text x="266" y="100" class="t-m">item: str</text><text x="266" y="126" class="t-m">qty: int = 1</text><text x="266" y="174" class="t-m">-&gt; int</text></g><g id="v7-ar2" class="ve"><line class="ln" x1="500" y1="115" x2="558" y2="115" marker-end="url(#mv7)"/></g><g id="v7-out" class="ve"><rect x="560" y="92" width="120" height="46" rx="8" class="bw"/><text x="620" y="121" text-anchor="middle" class="big" style="font-size:20px">480</text></g><g id="v7-doc" class="ve"><rect x="250" y="200" width="490" height="36" rx="6" class="b"/><text x="264" y="223" class="t-s">docstring: "Return the total price in rupees for qty of an item on the menu."</text></g></svg></div>
+    <p class="vid-cap" aria-live="polite">Press Play to start.</p>
+    <div class="vid-bar"><button class="btn vid-play" type="button">Play</button><div class="vid-prog" title="Click to jump"><div></div></div><span class="vid-time">0:00</span><label><input type="checkbox" class="vid-voice"> Narrate aloud</label></div>
+  </div>
+  <div class="box remember"><span class="tag">Remember</span>
+    <ul><li>One job per function, a clear name, type hints, a one-line docstring.</li><li>Python does not enforce type hints; they are for readers, tools and models.</li></ul>
+  </div>
+  <div class="quiz"><div class="quiz-head">Check yourself<span>2 questions</span></div>
+    <div class="mcq" data-ans="d"><p class="q">1. In <code>def get_price(item: str, qty: int = 1) -> int:</code>, what does <code>-> int</code> mean?</p><div class="choices">
+      <button type="button" data-k="a"><b>A</b>qty must be an integer</button>
+      <button type="button" data-k="b"><b>B</b>The function runs once</button>
+      <button type="button" data-k="c"><b>C</b>The function converts the result to an int automatically</button>
+      <button type="button" data-k="d"><b>D</b>It's a hint that the function returns an integer</button></div>
+      <p class="why"><code>-> int</code> is the return-type hint. It documents; it doesn't convert or enforce.</p><button type="button" class="btn ghost retry">Try again</button></div>
+    <div class="mcq" data-ans="b"><p class="q">2. Why will docstrings matter when functions become agent tools?</p><div class="choices">
+      <button type="button" data-k="a"><b>A</b>They make the function run faster</button>
+      <button type="button" data-k="b"><b>B</b>The model reads them to decide when and how to call the tool</button>
+      <button type="button" data-k="c"><b>C</b>Python refuses to run functions without them</button>
+      <button type="button" data-k="d"><b>D</b>They hide the code from the model</button></div>
+      <p class="why">The model sees the tool's name, parameters and description, not your code. A clear docstring is how it picks the right tool.</p><button type="button" class="btn ghost retry">Try again</button></div>
+  </div>
+</section>
+
+<!-- ============ T8 ============ -->
+<section id="t8">
+  <h2><span class="lessonno">08</span>Python for agents ③: decorators, the @ sign</h2>
+  <p class="oneline">A decorator wraps a function to add extra behaviour, such as logging, without changing the function's code.</p>
+<pre><code class="py">import functools
+
+def log_call(func):                              # takes a function…
+    @functools.wraps(func)                       # (keeps the name and docstring)
+    def wrapper(*args, **kwargs):
+        print(f"→ calling {func.__name__}{args}")
+        result = func(*args, **kwargs)           # run the original
+        print(f"← {func.__name__} returned {result!r}")
+        return result
+    return wrapper                               # …returns a wrapped one
+
+@log_call                                        # same as: get_price = log_call(get_price)
+def get_price(item: str, qty: int = 1) -> int:
+    """Return the total price in rupees for qty of an item on the menu."""
+    return MENU[item.lower().strip()] * qty</code></pre>
+  <div class="sim" id="sim-dec">
+    <div class="sim-head"><span class="ttl">Same function, with and without the wrapper</span><span class="live">Live</span></div>
+    <div class="sim-body">
+      <div class="row"><label style="font-weight:400;display:flex;gap:8px;align-items:center"><input type="checkbox" id="dec-on" checked> <code>@log_call</code> above <code>get_price</code></label><button class="btn" type="button" id="dec-go">Run get_price("cupcake", 6)</button></div>
+      <div class="result" id="dec-out">&gt;&gt;&gt;</div>
+      <div class="status" id="dec-st">The function body never changes. Only the wrapper adds the extra lines.</div>
+    </div>
+  </div>
+  <div class="box real"><span class="tag">Real world</span>
+    <p>You'll meet decorators everywhere: <code>@tool</code> in LangChain turns a function into an agent tool (Day 4), <code>@app.route("/")</code> in Flask turns a function into a web page. The @ line is always "wrap this function with extra powers".</p>
+  </div>
+  <div class="box analogy"><span class="tag">Analogy</span>
+    <p><strong>Gift wrapping.</strong> The gift (your function) stays exactly the same; the wrapping adds something around it, like a card that says who it's from. Or a <strong>security guard</strong> at a gate who notes everyone going in and out without changing the office inside.</p>
+  </div>
+  <div class="vid" data-vid="v8">
+    <div class="vid-head"><span class="ttl">Watch: wrapping a function</span><span class="live">Animated video</span></div>
+    <div class="vid-stage"><svg class="dg" viewBox="0 0 760 246" role="img" aria-label="Animation: a log_call wrapper is placed around get_price; a call passes through the wrapper, which prints before and after, and the result 480 comes out unchanged."><defs><marker id="mv8" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" class="ah"/></marker></defs><g id="v8-wrap" class="ve"><rect x="230" y="20" width="300" height="190" rx="14" class="bw"/><text x="380" y="44" text-anchor="middle" class="t-b">@log_call wrapper</text></g><g id="v8-fn" class="ve" ><rect x="280" y="80" width="200" height="70" rx="8" class="ba"/><text x="380.0" y="111.0" text-anchor="middle" class="t-b">get_price</text><text x="380.0" y="129.0" text-anchor="middle" class="t-s">unchanged inside</text></g><g id="v8-call" class="ve"><text x="20" y="118" class="t-m">get_price("cupcake", 6)</text><line class="ln" x1="200" y1="112" x2="228" y2="112" marker-end="url(#mv8)"/></g><g id="v8-p1" class="ve"><text x="380" y="70" text-anchor="middle" class="t-s">prints → calling get_price</text></g><g id="v8-p2" class="ve"><text x="380" y="178" text-anchor="middle" class="t-s">prints ← returned 480</text></g><g id="v8-out" class="ve"><line class="ln" x1="530" y1="112" x2="578" y2="112" marker-end="url(#mv8)"/><rect x="580" y="90" width="150" height="44" rx="8" class="b"/><text x="655" y="118" text-anchor="middle" class="t-b">480</text></g><g id="v8-same" class="ve"><text x="380" y="232" text-anchor="middle" class="t-ok">get_price = log_call(get_price)</text></g></svg></div>
+    <p class="vid-cap" aria-live="polite">Press Play to start.</p>
+    <div class="vid-bar"><button class="btn vid-play" type="button">Play</button><div class="vid-prog" title="Click to jump"><div></div></div><span class="vid-time">0:00</span><label><input type="checkbox" class="vid-voice"> Narrate aloud</label></div>
+  </div>
+  <div class="box remember"><span class="tag">Remember</span>
+    <ul><li><code>@deco</code> above <code>def f</code> means <code>f = deco(f)</code>.</li><li>The wrapper runs extra code before and after, then returns the original result.</li></ul>
+  </div>
+  <div class="quiz"><div class="quiz-head">Check yourself<span>2 questions</span></div>
+    <div class="mcq" data-ans="c"><p class="q">1. Writing <code>@log_call</code> above <code>def get_price(...)</code> is the same as…</p><div class="choices">
+      <button type="button" data-k="a"><b>A</b><code>log_call = get_price(log_call)</code></button>
+      <button type="button" data-k="b"><b>B</b>Calling <code>log_call()</code> once at the start of the program</button>
+      <button type="button" data-k="c"><b>C</b><code>get_price = log_call(get_price)</code></button>
+      <button type="button" data-k="d"><b>D</b>Deleting <code>get_price</code></button></div>
+      <p class="why">The decorator receives the function and gives back a wrapped version under the same name.</p><button type="button" class="btn ghost retry">Try again</button></div>
+    <div class="mcq" data-ans="a"><p class="q">2. On Day 4 you'll write <code>@tool</code> above <code>get_price</code>. What does that probably do?</p><div class="choices">
+      <button type="button" data-k="a"><b>A</b>Wraps the function so an agent can discover and call it as a tool</button>
+      <button type="button" data-k="b"><b>B</b>Rewrites the function's code</button>
+      <button type="button" data-k="c"><b>C</b>Runs the function immediately</button>
+      <button type="button" data-k="d"><b>D</b>Deletes the docstring</button></div>
+      <p class="why">Same idea as <code>@log_call</code>: the function stays the same, the wrapper adds what the agent needs (name, description, schema).</p><button type="button" class="btn ghost retry">Try again</button></div>
+  </div>
+</section>
+
+<!-- ============ T9 ============ -->
+<section id="t9">
+  <h2><span class="lessonno">09</span>Python for agents ④: try / except, failing politely</h2>
+  <p class="oneline">Things will go wrong: no internet, rate limits, bad JSON, unknown cakes. <code>try/except</code> catches the error and lets you reply politely instead of crashing.</p>
+<pre><code class="py">from openai import RateLimitError, AuthenticationError, APIConnectionError
+
+try:
+    response = client.chat.completions.create(model=MODEL, messages=history)
+    reply = response.choices[0].message.content
+except RateLimitError:
+    reply = "We're a little busy. Please try again in a minute."
+except AuthenticationError:
+    reply = "Setup problem: please tell the owner the API key isn't working."
+except APIConnectionError:
+    reply = "I can't reach the server right now. Please try again shortly."
+print(reply)</code></pre>
+  <div class="sim" id="sim-te">
+    <div class="sim-head"><span class="ttl">Make it fail on purpose</span><span class="live">Live</span></div>
+    <div class="sim-body">
+      <div class="opts" id="te-o" role="group" aria-label="What happens on the call"></div>
+      <label style="font-weight:400;display:flex;gap:8px;align-items:center"><input type="checkbox" id="te-on" checked> Wrapped in <code>try / except</code></label>
+      <div class="result" id="te-out"></div>
+      <div class="status" id="te-st"></div>
+    </div>
+  </div>
+  <div class="box real"><span class="tag">Real world</span>
+    <p>When a UPI payment fails, the app says "Payment failed, money not debited, try again"; it doesn't close itself. A bot that crashes leaves the customer with silence. On Day 10 we go further with retries and backup models; today we learn the basic net.</p>
+  </div>
+  <div class="box analogy"><span class="tag">Analogy</span>
+    <p>A <strong>safety net under a tightrope walker</strong>. Most of the time it's never used. When there's a slip, the show doesn't end in disaster: the walker lands safely and the audience gets an explanation.</p>
+  </div>
+  <div class="vid" data-vid="v9">
+    <div class="vid-head"><span class="ttl">Watch: the safety net</span><span class="live">Animated video</span></div>
+    <div class="vid-stage"><svg class="dg" viewBox="0 0 760 266" role="img" aria-label="Animation: a try block calls the API; on success the reply goes to the customer; on a 429 error the program crashes without a net, but with except it gives a polite message."><defs><marker id="mv9" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" class="ah"/></marker></defs><g id="v9-try" class="ve" ><rect x="20" y="90" width="150" height="60" rx="8" class="b"/><text x="95.0" y="116.0" text-anchor="middle" class="t-b">try:</text><text x="95.0" y="134.0" text-anchor="middle" class="t-s">call the API</text></g><g id="v9-okp" class="ve"><line class="ln" x1="170" y1="104" x2="298" y2="50" marker-end="url(#mv9)"/><rect x="300" y="24" width="200" height="50" rx="8" class="ba"/><text x="400" y="54" text-anchor="middle" class="t-b">reply → customer</text></g><g id="v9-fail" class="ve"><line class="ln" x1="170" y1="136" x2="298" y2="170" marker-end="url(#mv9)"/><text x="190" y="176" class="t-red">429!</text></g><g id="v9-crash" class="ve"><rect x="300" y="150" width="200" height="50" rx="8" class="bd"/><text x="400" y="172" text-anchor="middle" class="t-b">crash: program stops</text><text x="400" y="190" text-anchor="middle" class="t-s">customer gets silence</text></g><g id="v9-net" class="ve"><path d="M290 214 Q400 244 510 214" fill="none" stroke="var(--accent)" stroke-width="3"/><text x="400" y="252" text-anchor="middle" class="t-ok">except RateLimitError:</text></g><g id="v9-caught" class="ve"><rect x="300" y="150" width="200" height="50" rx="8" class="ba"/><text x="400" y="172" text-anchor="middle" class="t-b">caught by except</text><text x="400" y="190" text-anchor="middle" class="t-s">no crash</text></g><g id="v9-polite" class="ve"><line class="ln" x1="500" y1="175" x2="548" y2="175" marker-end="url(#mv9)"/><rect x="550" y="150" width="190" height="50" rx="8" class="ba"/><text x="645" y="172" text-anchor="middle" class="t-b">"Busy, try again</text><text x="645" y="190" text-anchor="middle" class="t-b">in a minute."</text></g></svg></div>
+    <p class="vid-cap" aria-live="polite">Press Play to start.</p>
+    <div class="vid-bar"><button class="btn vid-play" type="button">Play</button><div class="vid-prog" title="Click to jump"><div></div></div><span class="vid-time">0:00</span><label><input type="checkbox" class="vid-voice"> Narrate aloud</label></div>
+  </div>
+  <div class="box remember"><span class="tag">Remember</span>
+    <ul><li>Wrap anything that can fail: API calls, <code>json.loads</code>, dict lookups on user input.</li><li>Catch specific errors and give a useful message. Never <code>except: pass</code>, which hides problems.</li></ul>
+  </div>
+  <div class="quiz"><div class="quiz-head">Check yourself<span>2 questions</span></div>
+    <div class="mcq" data-ans="d"><p class="q">1. Without try/except, what happens when the API returns a 429 rate-limit error?</p><div class="choices">
+      <button type="button" data-k="a"><b>A</b>Python retries automatically forever</button>
+      <button type="button" data-k="b"><b>B</b>The reply is an empty string</button>
+      <button type="button" data-k="c"><b>C</b>The model answers anyway</button>
+      <button type="button" data-k="d"><b>D</b>The program stops with an error and the customer gets no reply</button></div>
+      <p class="why">An unhandled exception ends the program. (The OpenAI client does a couple of quick retries first, but if those fail, it raises.)</p><button type="button" class="btn ghost retry">Try again</button></div>
+    <div class="mcq" data-ans="b"><p class="q">2. Which is the worst way to handle errors in a customer-facing bot?</p><div class="choices">
+      <button type="button" data-k="a"><b>A</b><code>except RateLimitError:</code> with a "try again shortly" message</button>
+      <button type="button" data-k="b"><b>B</b><code>except: pass</code></button>
+      <button type="button" data-k="c"><b>C</b><code>except json.JSONDecodeError:</code> asking the model again</button>
+      <button type="button" data-k="d"><b>D</b><code>except KeyError:</code> replying "that item isn't on our menu"</button></div>
+      <p class="why"><code>except: pass</code> swallows every error silently: the customer gets nothing and you never learn what broke.</p><button type="button" class="btn ghost retry">Try again</button></div>
+  </div>
+</section>
+
+<!-- ============ BUILD ============ -->
+<section id="build">
+  <h2>Today's build: a Sweet Crumbs chatbot that remembers</h2>
+  <p>Everything from today in one Colab cell: the menu as a dict, a system prompt built from it, a priced function with a decorator, the chat loop with trimming, and try/except so it never crashes. Run the Day 1 setup cell (install, key, <code>client</code>) first.</p>
+<pre><code class="py">import json, functools
+from openai import RateLimitError, APIConnectionError
+
+MODEL = "openai/gpt-oss-20b"
+MENU = {"plum cake": 500, "chocolate cake": 650, "cupcake": 80}
+
+SYSTEM = f"""ROLE:   You are the friendly assistant for Sweet Crumbs Home Bakery.
+FACTS:  Menu with prices in rupees: {json.dumps(MENU)}
+        Orders need 24 hours' notice. All cakes have eggless versions.
+RULES:  Never promise a delivery time. If it isn't in FACTS, say "I'll check with the owner."
+        Remember the customer's name and order during the chat.
+FORMAT: Under 50 words, friendly, English or Telugu matching the customer."""
+
+def log_call(func):
+    @functools.wraps(func)
+    def wrapper(*args, **kwargs):
+        result = func(*args, **kwargs)
+        print(f"   [log] {func.__name__}{args} -> {result!r}")
+        return result
+    return wrapper
+
+@log_call
+def get_price(item: str, qty: int = 1) -> int:
+    """Return the total price in rupees for qty of an item on the menu."""
+    return MENU[item.lower().strip()] * qty
+
+history = [{"role": "system", "content": SYSTEM}]
+MAX_TURNS = 8
+
+def chat(user_text: str) -> str:
+    history.append({"role": "user", "content": user_text})
+    recent = [history[0]] + history[1:][-MAX_TURNS:]
+    try:
+        response = client.chat.completions.create(model=MODEL, messages=recent, temperature=0.3)
+        reply = response.choices[0].message.content
+    except RateLimitError:
+        reply = "We're a little busy. Please try again in a minute."
+    except APIConnectionError:
+        reply = "I can't reach the server right now. Please try again shortly."
+    history.append({"role": "assistant", "content": reply})
+    return reply
+
+print("Total for 6 cupcakes:", get_price("cupcake", 6))
+while True:
+    text = input("You: ")
+    if text.lower().strip() in ("bye", "exit", "quit"):
+        print("Bot: Thank you for visiting Sweet Crumbs!")
+        break
+    print("Bot:", chat(text))</code></pre>
+  <div class="box real"><span class="tag">Test it like a customer</span><p>Say your name, ask for an eggless chocolate cake for tomorrow, ask the price for two, then ask "what did I order?". It should remember the name and the order, quote Rs 1,300 and never promise a delivery time.</p></div>
+
+  <h3>Your 10%: try it different ways</h3>
+  <ol>
+    <li><strong>Prompt parts:</strong> delete the RULES lines and ask "Can you deliver in 1 hour?". Put them back and ask again.</li>
+    <li><strong>Few-shot:</strong> build a classifier for your business with three examples, and test it on five new messages.</li>
+    <li><strong>JSON:</strong> ask the bot to return the order as JSON with name, item, qty, date and eggless, then <code>json.loads</code> it inside try/except.</li>
+    <li><strong>Memory:</strong> set <code>MAX_TURNS = 2</code>, tell it your name, chat for three turns, then ask your name. Explain what happened.</li>
+    <li><strong>Your business:</strong> rebuild this cell for your own business: its menu or catalogue as a dict, one function with a docstring, and its own SYSTEM prompt.</li>
+  </ol>
+  <div class="box lens"><span class="tag">Before Level 2 (Day 3)</span><p>Bring your 10 customer questions and your business's catalogue as a Python dict. On Day 3 the chatbot becomes an <strong>agent</strong>: we meet the agent loop and LangChain, and on Day 4 your functions become tools it can call by itself.</p></div>
+</section>
+
+<section id="wrap">
+  <h2>Summary: Day 2 in one table</h2>
+  <div class="tablewrap"><table>
+    <thead><tr><th>Idea</th><th>One line</th><th>Analogy</th></tr></thead>
+    <tbody>
+      <tr><td>Messages and roles</td><td>system = instructions, user = person, assistant = model's replies</td><td>A drama script</td></tr>
+      <tr><td>System prompt</td><td>Role · Facts · Rules · Format</td><td>First-day briefing</td></tr>
+      <tr><td>Few-shot</td><td>A few worked examples fix the format</td><td>Showing a cashier two bills</td></tr>
+      <tr><td>JSON output</td><td>Ask for fields, then <code>json.loads</code></td><td>Application form, not a letter</td></tr>
+      <tr><td>Memory by hand</td><td>Append, send all, trim old turns</td><td>Reading the notebook aloud</td></tr>
+      <tr><td>Dicts and JSON</td><td>key → value; <code>.get</code> doesn't crash</td><td>Phone contacts</td></tr>
+      <tr><td>Functions</td><td>One job, type hints, docstring</td><td>Labelled vending machine</td></tr>
+      <tr><td>Decorators</td><td><code>@d</code> means <code>f = d(f)</code></td><td>Gift wrapping</td></tr>
+      <tr><td>try / except</td><td>Catch specific errors, reply politely</td><td>Safety net</td></tr>
+    </tbody>
+  </table></div>
+</section>
+
+<footer>
+  <p>Ai Agents Workshop · Level 1 · Day 2 tutorial, prepared 18 November 2026. Bot replies in the simulators are typical examples written to show each idea, not live model output; real replies vary. Token counts are estimates (about 4 characters per token).</p>
+</footer>
+</main>
+</div>
+
+<script>
+(function(){
+function $(id){return document.getElementById(id);}
+function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+
+/* ---------- Prompt builder ---------- */
+(function(){
+  if(!$('pb-out'))return;
+  var Q=[
+    {l:'Eggless cake today evening?',q:'Can I get an eggless cake today evening?',
+     noFacts:'Sure! We can have a lovely eggless cake ready for you this evening. Just tell us the flavour!',
+     noRules:'Yes, all our cakes come in eggless versions! We’ll do our best to have it ready by this evening for you.',
+     good:'All our cakes come eggless, but orders need 24 hours’ notice, so this evening isn’t possible. Shall I book one for tomorrow?'},
+    {l:'Deliver to Kakinada?',q:'Do you deliver to Kakinada?',
+     noFacts:'Yes, we deliver across Kakinada, usually within 2 hours!',
+     noRules:'We may be able to deliver to Kakinada. Delivery usually takes about an hour.',
+     good:'I’ll check with the owner about delivery to Kakinada and get back to you.'},
+    {l:'Price of plum cake?',q:'How much is a plum cake?',
+     noFacts:'A plum cake usually costs around Rs 800–1,200 depending on size.',
+     noRules:'Our plum cake is Rs 500.',
+     good:'Our plum cake is Rs 500. Want it eggless? All our cakes come that way too.'}];
+  var qi=0,opts=$('pb-q');
+  opts.innerHTML=Q.map(function(q,i){return '<button class="opt" type="button" data-i="'+i+'">'+q.l+'</button>';}).join('');
+  opts.querySelectorAll('.opt').forEach(function(b){b.addEventListener('click',function(){qi=+b.getAttribute('data-i');draw();});});
+  ['pb-role','pb-facts','pb-rules','pb-format'].forEach(function(id){$(id).addEventListener('change',draw);});
+  function draw(){
+    var r=$('pb-role').checked,f=$('pb-facts').checked,ru=$('pb-rules').checked,fo=$('pb-format').checked,q=Q[qi];
+    opts.querySelectorAll('.opt').forEach(function(b,i){b.classList.toggle('right',i===qi);});
+    var sys=[];
+    if(r)sys.push('ROLE:   You are the assistant for Sweet Crumbs Home Bakery.');
+    if(f)sys.push('FACTS:  Orders need 24 hours’ notice. All cakes have eggless versions.\n        Plum cake Rs 500. Chocolate cake Rs 650. Cupcake Rs 80.');
+    if(ru)sys.push('RULES:  Never promise a delivery time. If it isn’t in FACTS,\n        say "I’ll check with the owner."');
+    if(fo)sys.push('FORMAT: Under 50 words, friendly.');
+    $('pb-sys').textContent=sys.length?sys.join('\n'):'(empty system message)';
+    var a=!f?q.noFacts:(!ru?q.noRules:q.good),notes=[];
+    if(!f)notes.push('<strong>No Facts</strong> → it invents a plausible answer.');
+    else if(!ru)notes.push('<strong>No Rules</strong> → it knows the facts but makes promises the owner can’t keep.');
+    if(!r){a='As an AI assistant, I can share some general information. '+a;notes.push('<strong>No Role</strong> → generic, robotic tone; it doesn’t speak for the bakery.');}
+    if(!fo){a+=' At our bakery we take great pride in using only the freshest ingredients, and we love baking for birthdays, anniversaries, festivals and every little celebration in between. Please let me know if there is anything else at all I can help you with today, and have a truly wonderful day!';notes.push('<strong>No Format</strong> → long and rambling.');}
+    $('pb-out').innerHTML='<strong>Customer:</strong> '+esc(q.q)+'<br><strong>Bot:</strong> '+esc(a);
+    $('pb-st').innerHTML=notes.length?notes.join('<br>'):'All four parts present: short, correct, safe, on-brand.';
+  }
+  draw();
+})();
+
+/* ---------- Few-shot ---------- */
+(function(){
+  if(!$('fs-run'))return;
+  var M=['need 2 plum cakes for friday','eggless available?','yesterday’s cake was too dry','do u deliver near JNTU?'];
+  var Z=['This looks like an order request.','Category: Question','complaint 😞','The customer is asking about delivery, so this is a question.'];
+  var F=['order','question','complaint','question'];
+  var OK={order:1,question:1,complaint:1};
+  function run(){
+    var on=$('fs-on').checked,A=on?F:Z,good=0;
+    $('fs-body').innerHTML=M.map(function(m,i){var ok=OK[A[i]];if(ok)good++;return '<tr><td>'+esc(m)+'</td><td><code>'+esc(A[i])+'</code></td><td>'+(ok?'✓ yes':'✗ no')+'</td></tr>';}).join('');
+    $('fs-st').innerHTML=on?'<strong>Few-shot:</strong> '+good+' of 4 answers are exactly <code>order</code>, <code>question</code> or <code>complaint</code>. Your code can do <code>if label == "order":</code> safely.':'<strong>Zero-shot:</strong> the meaning is right, but only '+good+' of 4 answers are in a shape your code can check. Now tick the box and run again.';
+  }
+  $('fs-run').addEventListener('click',run);
+  $('fs-on').addEventListener('change',function(){if($('fs-body').innerHTML)run();});
+})();
+
+/* ---------- JSON ---------- */
+(function(){
+  if(!$('js-raw'))return;
+  var M=[
+    {l:'"hi ravi here, need 2 plum cakes for 24th dec, eggless pls"',o:{name:'Ravi',item:'plum cake',qty:2,date:'24 Dec',eggless:true}},
+    {l:'"Sravani: 6 cupcakes tmrw evening, normal with egg ok"',o:{name:'Sravani',item:'cupcake',qty:6,date:'tomorrow',eggless:false}},
+    {l:'"1 choco cake for my son’s bday on sat. eggless. -Arjun"',o:{name:'Arjun',item:'chocolate cake',qty:1,date:'Saturday',eggless:true}}];
+  var mi=0,opts=$('js-m'),PRICE={'plum cake':500,'chocolate cake':650,'cupcake':80};
+  opts.innerHTML=M.map(function(m,i){return '<button class="opt" type="button" data-i="'+i+'">Message '+(i+1)+'</button>';}).join('');
+  opts.querySelectorAll('.opt').forEach(function(b){b.addEventListener('click',function(){mi=+b.getAttribute('data-i');draw();});});
+  $('js-fence').addEventListener('change',draw);
+  function py(o){return '{'+Object.keys(o).map(function(k){var v=o[k];return "'"+k+"': "+(typeof v==='string'?"'"+v+"'":(v===true?'True':v===false?'False':v));}).join(', ')+'}';}
+  function draw(){
+    opts.querySelectorAll('.opt').forEach(function(b,i){b.classList.toggle('right',i===mi);});
+    var m=M[mi],j=JSON.stringify(m.o,null,2),fence=$('js-fence').checked;
+    $('js-raw').textContent=fence?'```json\n'+j+'\n```':j;
+    if(fence){
+      $('js-dict').innerHTML='<span style="color:var(--danger)">json.decoder.JSONDecodeError:\nExpecting value: line 1 column 1 (char 0)</span>';
+      $('js-st').innerHTML='Customer said: '+esc(m.l)+'<br>The <code>```</code> fences aren’t JSON, so parsing fails. Fix: say "Return ONLY JSON", or strip the fences, and always wrap <code>json.loads</code> in <code>try/except</code>.';
+    }else{
+      var o=m.o;
+      $('js-dict').textContent='order = '+py(o)+'\n\norder["item"]  → \''+o.item+'\'\norder["qty"]   → '+o.qty+'\norder["eggless"] → '+(o.eggless?'True':'False')+'\ntotal = '+o.qty+' × '+PRICE[o.item]+' = '+(o.qty*PRICE[o.item]);
+      $('js-st').innerHTML='Customer said: '+esc(m.l)+'<br>Clean fields your code can save, price and check. Note JSON <code>true</code> became Python <code>True</code>.';
+    }
+  }
+  draw();
+})();
+
+/* ---------- Chat loop ---------- */
+(function(){
+  if(!$('cl-send'))return;
+  var SYS={role:'system',content:'You are Sweet Crumbs’ assistant. Menu: plum cake Rs 500, chocolate cake Rs 650, cupcake Rs 80. Orders need 24 hours’ notice.'};
+  var SUG=['Hi, my name is Ravi','I need 2 plum cakes','Is it eggless?','What is my name?','What did I order?'];
+  var hist=[],tot=0;
+  function tk(s){return Math.max(1,Math.round(s.length/4))+4;}
+  function findName(ms){for(var i=ms.length-1;i>=0;i--){if(ms[i].role!=='user')continue;var m=ms[i].content.match(/(?:my name is|i am|i'm|this is)\s+([A-Za-z]+)/i);if(m)return m[1][0].toUpperCase()+m[1].slice(1);}return null;}
+  function findOrder(ms){for(var i=ms.length-1;i>=0;i--){if(ms[i].role!=='user')continue;var m=ms[i].content.match(/(\d+|a|one|two|three)?\s*(plum cakes?|chocolate cakes?|cupcakes?)/i);if(m)return ((m[1]||'1')+' '+m[2]).toLowerCase();}return null;}
+  function bot(sent){
+    var last=sent[sent.length-1].content,low=last.toLowerCase(),prev=sent.slice(0,-1);
+    var nm=findName([sent[sent.length-1]]);
+    if(nm)return 'Nice to meet you, '+nm+'! What would you like to order?';
+    if(/what('?s| is) my name|who am i/.test(low)){var n=findName(prev);return n?'You’re '+n+'!':'Sorry, I don’t know your name. It isn’t in the messages I received.';}
+    if(/what did i order|my order/.test(low)){var o=findOrder(prev);return o?'You asked for '+o+'.':'I don’t see any order in the messages I received.';}
+    var od=findOrder([sent[sent.length-1]]);
+    if(od)return 'Noted: '+od+'. Orders need 24 hours’ notice. Anything else?';
+    if(/eggless/.test(low)){var o2=findOrder(prev);return o2?'Yes, the '+o2.replace(/^\S+\s/,'')+' can be made eggless.':'Yes, all our cakes come eggless. Which one would you like?';}
+    if(/price|how much|cost/.test(low))return 'Plum cake Rs 500, chocolate cake Rs 650, cupcake Rs 80.';
+    return 'Happy to help! Ask me about cakes, prices or your order.';
+  }
+  function render(sent){
+    $('cl-hist').innerHTML=sent.map(function(m,i){return '<div class="r-'+m.role+(i>=sent.length-2?' fresh':'')+'"><strong>'+m.role+':</strong> '+esc(m.content)+'</div>';}).join('');
+  }
+  function send(text){
+    text=(text||'').trim();if(!text)return;
+    hist.push({role:'user',content:text});
+    var max=+$('cl-max').value,resend=$('cl-resend').checked;
+    var body=resend?hist.slice(-Math.min(max,hist.length)):[hist[hist.length-1]];
+    var sent=[SYS].concat(body);
+    var reply=bot(sent);
+    hist.push({role:'assistant',content:reply});
+    var shown=sent.concat([{role:'assistant',content:reply}]);
+    render(shown);
+    var t=sent.reduce(function(a,m){return a+tk(m.content);},0);tot+=t+tk(reply);
+    $('cl-n').textContent=sent.length;$('cl-tk').textContent=t;$('cl-tot').textContent=tot;
+    var dropped=hist.length-1-body.length;
+    $('cl-st').innerHTML=!resend?'<strong>History not resent:</strong> the model only sees the system message and your newest line, so it can’t remember anything.':(dropped>0?'<strong>Trimmed:</strong> '+dropped+' older message(s) were not sent this call. Anything in them is forgotten.':'<strong>Full history sent:</strong> the model sees the whole conversation, so it can “remember”. Watch tokens per call grow.');
+    $('cl-in').value='';
+  }
+  $('cl-sug').innerHTML=SUG.map(function(s){return '<button class="opt" type="button">'+s+'</button>';}).join('');
+  $('cl-sug').querySelectorAll('.opt').forEach(function(b){b.addEventListener('click',function(){send(b.textContent);});});
+  $('cl-send').addEventListener('click',function(){send($('cl-in').value);});
+  $('cl-in').addEventListener('keydown',function(e){if(e.key==='Enter')send($('cl-in').value);});
+  $('cl-reset').addEventListener('click',function(){hist=[];tot=0;$('cl-hist').innerHTML='<div class="r-system"><strong>system:</strong> '+esc(SYS.content)+'</div>';$('cl-n').textContent=0;$('cl-tk').textContent=0;$('cl-tot').textContent=0;$('cl-in').value='Hi, my name is Ravi';$('cl-st').innerHTML='Send "Hi, my name is Ravi", then "What is my name?".';});
+  $('cl-reset').click();
+})();
+
+/* ---------- Dict lookup ---------- */
+(function(){
+  if(!$('dc-br'))return;
+  var MENU={'plum cake':500,'chocolate cake':650,'cupcake':80};
+  function k(){return $('dc-k').value;}
+  $('dc-br').addEventListener('click',function(){var key=k();
+    if(Object.prototype.hasOwnProperty.call(MENU,key)){$('dc-out').textContent='>>> MENU["'+key+'"]\n'+MENU[key];$('dc-st').innerHTML='Found. Square brackets work when the key exists exactly.';}
+    else{$('dc-out').innerHTML='>>> MENU["'+esc(key)+'"]\n<span style="color:var(--danger)">KeyError: \''+esc(key)+'\'</span>';$('dc-st').innerHTML='Crash. '+(MENU.hasOwnProperty(key.toLowerCase().trim())?'Keys are exact: try <code>key.lower().strip()</code> first.':'The key isn’t in the menu. Use <code>.get()</code> for a safe default.');}});
+  $('dc-get').addEventListener('click',function(){var key=k(),v=MENU.hasOwnProperty(key)?MENU[key]:'\'not on menu\'';$('dc-out').textContent='>>> MENU.get("'+key+'", "not on menu")\n'+v;$('dc-st').innerHTML='<code>.get</code> never crashes: you get the value or your default.';});
+  $('dc-dump').addEventListener('click',function(){$('dc-out').textContent='>>> json.dumps(MENU)\n\''+JSON.stringify(MENU).replace(/,/g,', ').replace(/:/g,': ')+'\'';$('dc-st').innerHTML='Now it’s one <strong>string</strong> of text, ready to put in a prompt, save in a file or send over the internet.';});
+})();
+
+/* ---------- Function call ---------- */
+(function(){
+  if(!$('fn-go'))return;
+  var MENU={'plum cake':500,'chocolate cake':650,'cupcake':80};
+  function go(){
+    var it=$('fn-item').value,q=$('fn-qty').value.trim(),p=MENU[it];
+    if(/^-?\d+$/.test(q)){var n=parseInt(q,10);$('fn-out').textContent='>>> get_price("'+it+'", '+n+')\n'+(p*n);$('fn-st').innerHTML='Rs '+(p*n)+'. An int went in, an int came out, as the hints promised.';}
+    else{var s=Array(p+1).join(q);$('fn-out').innerHTML='>>> get_price("'+esc(it)+'", "'+esc(q)+'")\n\''+esc(s.slice(0,60))+'…\'  <span style="color:var(--muted)">('+s.length+' characters)</span>';$('fn-st').innerHTML='No error! <code>'+p+' * "'+esc(q)+'"</code> repeats the text '+p+' times. Python doesn’t enforce <code>qty: int</code>; hints are labels. Validate inputs yourself (and on Day 4, Pydantic will).';}
+  }
+  $('fn-go').addEventListener('click',go);go();
+})();
+
+/* ---------- Decorator ---------- */
+(function(){
+  if(!$('dec-go'))return;
+  $('dec-go').addEventListener('click',function(){
+    var on=$('dec-on').checked;
+    $('dec-out').textContent=on?'>>> get_price("cupcake", 6)\n→ calling get_price(\'cupcake\', 6)\n← get_price returned 480\n480':'>>> get_price("cupcake", 6)\n480';
+    $('dec-st').innerHTML=on?'The wrapper printed a line <strong>before</strong> and <strong>after</strong>; the function itself did exactly the same work.':'No wrapper: just the result. Same function body, nothing extra.';
+  });
+})();
+
+/* ---------- try / except ---------- */
+(function(){
+  if(!$('te-o'))return;
+  var O=[
+    {l:'Works',tb:null,ok:'Bot: Our plum cake is Rs 500.'},
+    {l:'429 rate limit',tb:'openai.RateLimitError: Error code: 429 - Rate limit reached',ok:'Bot: We’re a little busy. Please try again in a minute.',ex:'RateLimitError'},
+    {l:'Wrong API key',tb:'openai.AuthenticationError: Error code: 401 - Invalid API Key',ok:'Bot: Setup problem: please tell the owner the API key isn’t working.',ex:'AuthenticationError'},
+    {l:'No internet',tb:'openai.APIConnectionError: Connection error.',ok:'Bot: I can’t reach the server right now. Please try again shortly.',ex:'APIConnectionError'}];
+  var oi=0,opts=$('te-o');
+  opts.innerHTML=O.map(function(o,i){return '<button class="opt" type="button" data-i="'+i+'">'+o.l+'</button>';}).join('');
+  opts.querySelectorAll('.opt').forEach(function(b){b.addEventListener('click',function(){oi=+b.getAttribute('data-i');draw();});});
+  $('te-on').addEventListener('change',draw);
+  function draw(){
+    opts.querySelectorAll('.opt').forEach(function(b,i){b.classList.toggle('right',i===oi);});
+    var o=O[oi],on=$('te-on').checked;
+    if(!o.tb){$('te-out').textContent=o.ok;$('te-st').innerHTML='Nothing went wrong, so the <code>except</code> blocks never run. The net costs nothing when it isn’t needed.';return;}
+    if(on){$('te-out').textContent='(caught '+o.ex+')\n'+o.ok;$('te-st').innerHTML='Caught by <code>except '+o.ex+':</code>. The program keeps running and the customer gets a useful message.';}
+    else{$('te-out').innerHTML='<span style="color:var(--danger)">Traceback (most recent call last):\n  File "&lt;cell&gt;", line 3, in &lt;module&gt;\n    response = client.chat.completions.create(...)\n'+esc(o.tb)+'</span>';$('te-st').innerHTML='<strong>Crash.</strong> The program stops here; the customer gets silence. Tick the box to add the safety net.';}
+  }
+  draw();
+})();
+})();
+
+</script>
+<script>
+window.VSCENES={
+ v1:[
+  {show:['page','sys'],hl:['sys'],cap:'Every conversation is a script. At the top: the director’s note, the system message. The customer never sees it.'},
+  {show:['page','sys','u1'],hl:['u1'],cap:'Then the customer’s line: a user message.'},
+  {show:['page','sys','u1','a1'],hl:['a1'],cap:'Then the model’s earlier reply: an assistant message.'},
+  {show:['page','sys','u1','a1','u2'],hl:['u2'],cap:'The customer asks something new.'},
+  {show:['page','sys','u1','a1','u2','ar','model'],hl:['model'],cap:'The whole script, top to bottom, is sent to the model in one call.'},
+  {show:['page','sys','u1','a1','u2','ar','model','a2'],cap:'Its only job: write the next assistant line. Every chat app works this way.'}],
+ v2:[
+  {show:['title','emp'],cap:'A new employee joins Sweet Crumbs. Smart, but knows nothing about this bakery yet. That’s the model.'},
+  {show:['title','emp','role'],hl:['role'],cap:'Role: who you are and who you work for.'},
+  {show:['title','emp','role','facts'],hl:['facts'],cap:'Facts: the menu, prices, 24 hours’ notice, eggless options. Without these, it guesses.'},
+  {show:['title','emp','role','facts','rules'],hl:['rules'],cap:'Rules: never promise a delivery time; if unsure, say you’ll check with the owner.'},
+  {show:['title','emp','role','facts','rules','fmt'],hl:['fmt'],cap:'Format: short, friendly, in the customer’s language.'},
+  {show:['title','emp','role','facts','rules','fmt','q'],cap:'Now a customer asks for an eggless cake this evening…'},
+  {show:['title','emp','role','facts','rules','fmt','q','a'],hl:['a'],cap:'…and gets an answer that is correct, safe and on-brand. Each of the four parts did its job.'}],
+ v3:[
+  {show:['rule'],cap:'An instruction alone: “label each message with one word.” The model may still answer in many different shapes.'},
+  {show:['rule','e1'],cap:'So we show an example: an order message, labelled “order”.'},
+  {show:['rule','e1','e2'],cap:'A question, labelled “question”.'},
+  {show:['rule','e1','e2','e3'],cap:'A complaint, labelled “complaint”. Three examples: that’s few-shot.'},
+  {show:['rule','e1','e2','e3','new'],hl:['new'],cap:'Now a new message the model has never seen.'},
+  {show:['rule','e1','e2','e3','new','ans'],hl:['ans'],cap:'It answers in exactly the same shape: one word your code can check with a simple if.'}],
+ v4:[
+  {show:['chat'],cap:'A customer writes the way people write: short forms, no punctuation.'},
+  {show:['chat','ar1','form'],cap:'We ask the model to return ONLY JSON, with named keys.'},
+  {show:['chat','ar1','form','f1','f2'],hl:['f1','f2'],cap:'Name and item become their own fields…'},
+  {show:['chat','ar1','form','f1','f2','f3','f4'],hl:['f3','f4'],cap:'…quantity as a number, date as text…'},
+  {show:['chat','ar1','form','f1','f2','f3','f4','f5'],hl:['f5'],cap:'…and eggless as true or false.'},
+  {show:['chat','ar1','form','f1','f2','f3','f4','f5','ar2','row'],hl:['row'],cap:'json.loads turns it into a Python dict, and your code can save it as a clean row. Code reads fields, not sentences.'}],
+ v5:[
+  {show:['user','ar1','hist','m0'],cap:'The history list starts with the system message.'},
+  {show:['user','ar1','hist','m0','m1','m2'],hl:['m1'],cap:'Turn 1: the user’s message is appended, and so is the reply.'},
+  {show:['user','ar1','hist','m0','m1','m2','m3','m4'],cap:'Turn 2: two more messages. The list grows by two every turn.'},
+  {show:['user','ar1','hist','m0','m1','m2','m3','m4','m5','ar2','model'],hl:['model'],cap:'Turn 3: “What’s my name?” The whole list is sent.'},
+  {show:['user','ar1','hist','m0','m1','m2','m3','m4','m5','ar2','model','rep'],hl:['rep'],cap:'The name is in the list, so the model answers “You’re Ravi!” That’s memory by hand.'},
+  {show:['user','ar1','hist','m0','m3','m4','m5','ar2','model','rep','cut'],txt:{rt:'"I don\'t know"'},hl:['rep'],cap:'But if we trim old turns to save tokens, the message with the name is not sent, and the bot forgets. Trim with care.'}],
+ v6:[
+  {show:['menu'],cap:'A dict stores key → value pairs. Our menu: item → price.'},
+  {show:['menu','q1'],hl:['r1'],cap:'MENU["plum cake"] looks up the key and returns 500.'},
+  {show:['menu','q1','q2'],cap:'Ask for a key that isn’t there, and square brackets crash with a KeyError.'},
+  {show:['menu','q1','q2','q3'],cap:'.get() with a default never crashes: you get the price or “not on menu”.'},
+  {show:['menu','q1','q2','q3','js'],hl:['js'],cap:'json.dumps turns the dict into text, ready for a prompt, a file or the internet. json.loads turns it back.'}],
+ v7:[
+  {show:['fn'],cap:'A function is a machine with a name: get_price.'},
+  {show:['fn','in','ar1'],hl:['fn'],cap:'Inputs go in through labelled slots: item is text, qty is a whole number.'},
+  {show:['fn','in','ar1','ar2','out'],hl:['out'],cap:'One result comes out: 6 cupcakes × Rs 80 = 480. The label -> int says what to expect.'},
+  {show:['fn','in','ar1','ar2','out','doc'],hl:['doc'],cap:'The docstring explains the machine in one line. When this becomes an agent tool, the model reads exactly this to decide when to use it.'}],
+ v8:[
+  {show:['fn'],cap:'Here is get_price, working as normal.'},
+  {show:['fn','wrap'],hl:['wrap'],cap:'@log_call wraps it, like gift paper around a gift. The function inside is not changed at all.'},
+  {show:['fn','wrap','call','p1'],cap:'A call now enters the wrapper first, which prints a line…'},
+  {show:['fn','wrap','call','p1','p2'],hl:['fn'],cap:'…runs the original function, then prints the result…'},
+  {show:['fn','wrap','call','p1','p2','out'],cap:'…and hands back exactly the same 480.'},
+  {show:['fn','wrap','call','p1','p2','out','same'],cap:'@log_call is just a short way to write get_price = log_call(get_price). LangChain’s @tool works the same way.'}],
+ v9:[
+  {show:['try'],cap:'We try something that might fail: calling the API.'},
+  {show:['try','okp'],cap:'Most of the time it works and the reply goes to the customer.'},
+  {show:['try','fail','crash'],cap:'But sometimes the server says 429: too many requests. With no safety net, the program stops and the customer gets silence.'},
+  {show:['try','fail','net','caught'],cap:'except RateLimitError: is the safety net under that one failure.'},
+  {show:['try','fail','net','caught','polite'],hl:['polite'],cap:'The error is caught and the customer gets a useful message instead. The program keeps running.'}]
+};
+
+/* ---------- Animated videos ---------- */
+(function(){
+var reduce=window.matchMedia&&window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+var S=window.VSCENES;
+function fmt(s){s=Math.max(0,Math.round(s));return Math.floor(s/60)+':'+('0'+s%60).slice(-2);}
+document.querySelectorAll('.vid').forEach(function(box){
+  var id=box.getAttribute('data-vid'),sc=S[id];if(!sc)return;
+  var svg=box.querySelector('svg'),cap=box.querySelector('.vid-cap'),btn=box.querySelector('.vid-play'),prog=box.querySelector('.vid-prog'),bar=prog.firstElementChild,tm=box.querySelector('.vid-time'),voice=box.querySelector('.vid-voice');
+  var dur=sc.map(function(s){return Math.max(3.2,s.cap.length/16);}),total=dur.reduce(function(a,b){return a+b;},0);
+  var starts=[],acc=0;dur.forEach(function(d){starts.push(acc);acc+=d;});
+  var els=svg.querySelectorAll('[id^="'+id+'-"]'),orig={};
+  els.forEach(function(e){if(e.tagName==='text')orig[e.id]=e.textContent;});
+  function el(k){var p=k.split('>');var e=svg.querySelector('#'+id+'-'+p[0]);return p[1]&&e?e.querySelector(p[1]):e;}
+  var cur=-1,t=0,playing=false,last=0,raf=null;
+  function apply(i){
+    if(i===cur)return;cur=i;var s=sc[i];
+    svg.querySelectorAll('.ve').forEach(function(e){var k=e.id.slice(id.length+1);e.classList.toggle('show',s.show.indexOf(k)>=0);});
+    svg.querySelectorAll('.on').forEach(function(e){e.classList.remove('on');});
+    (s.hl||[]).forEach(function(k){var e=el(k);if(!e)return;var r=e.tagName==='rect'?e:e.querySelector('rect');if(r)r.classList.add('on');});
+    svg.querySelectorAll('[data-t0]').forEach(function(e){e.style.transform=e.getAttribute('data-t0');});
+    Object.keys(orig).forEach(function(k){var e=svg.querySelector('#'+k);if(e)e.textContent=orig[k];});
+    for(var j=0;j<=i;j++){var m=sc[j].mv||{},x=sc[j].txt||{};
+      Object.keys(m).forEach(function(k){var e=el(k);if(e)e.style.transform=m[k];});
+      Object.keys(x).forEach(function(k){var e=el(k);if(e)e.textContent=x[k];});}
+    cap.textContent=s.cap;
+    if(voice.checked&&playing&&window.speechSynthesis){try{speechSynthesis.cancel();var u=new SpeechSynthesisUtterance(s.cap);u.lang='en-IN';u.rate=1.02;speechSynthesis.speak(u);}catch(e){}}
+  }
+  function idx(tt){for(var i=starts.length-1;i>=0;i--){if(tt>=starts[i])return i;}return 0;}
+  function draw(){bar.style.width=(t/total*100)+'%';tm.textContent=fmt(t)+' / '+fmt(total);}
+  function frame(now){if(!playing)return;t+=(now-last)/1000;last=now;
+    if(t>=total){t=total;draw();pause();btn.textContent='Replay';return;}
+    apply(idx(t));draw();raf=requestAnimationFrame(frame);}
+  function play(){if(t>=total){t=0;cur=-1;}playing=true;btn.textContent='Pause';last=performance.now();apply(idx(t));raf=requestAnimationFrame(frame);}
+  function pause(){playing=false;if(raf)cancelAnimationFrame(raf);if(btn.textContent==='Pause')btn.textContent='Play';try{if(window.speechSynthesis)speechSynthesis.cancel();}catch(e){}}
+  btn.addEventListener('click',function(){playing?pause():play();});
+  prog.addEventListener('click',function(ev){var r=prog.getBoundingClientRect();t=Math.min(total-0.01,Math.max(0,(ev.clientX-r.left)/r.width*total));cur=-1;apply(idx(t));draw();if(!playing)btn.textContent='Play';});
+  voice.addEventListener('change',function(){if(!voice.checked){try{speechSynthesis.cancel();}catch(e){}}});
+  draw();
+});
+})();
+
+/* ---------- MCQ quiz ---------- */
+(function(){
+  var all=document.querySelectorAll('.mcq'),right=0;
+  var sn=document.getElementById('sc-n'),sb=document.getElementById('sc-bar');
+  document.getElementById('sc-t').textContent=all.length;
+  function upd(){sn.textContent=right;sb.style.width=(right/all.length*100)+'%';}
+  all.forEach(function(q){
+    var ans=q.getAttribute('data-ans'),bs=q.querySelectorAll('.choices button'),why=q.querySelector('.why'),scored=false,base=why.innerHTML;
+    bs.forEach(function(b){b.addEventListener('click',function(){
+      var k=b.getAttribute('data-k'),ok=k===ans;
+      bs.forEach(function(x){x.disabled=true;x.classList.toggle('right',x.getAttribute('data-k')===ans);});
+      if(!ok)b.classList.add('wrong');
+      why.innerHTML=(ok?'<strong>Correct.</strong> ':'<strong>Not quite.</strong> ')+base;
+      q.classList.add('done');
+      if(ok&&!scored){scored=true;right++;upd();}
+    });});
+    q.querySelector('.retry').addEventListener('click',function(){bs.forEach(function(x){x.disabled=false;x.classList.remove('right','wrong');});q.classList.remove('done');});
+  });
+  upd();
+})();
+
+</script>
+<script>
+// Tiny Python highlighter: comments, strings, keywords, numbers.
+(function(){
+  var KW=/\b(import|from|def|return|class|if|else|elif|for|in|while|try|except|as|with|None|True|False|print|lambda|is|not|and|or|raise|self)\b/;
+  document.querySelectorAll('pre code.py').forEach(function(el){
+    var src=el.textContent, out='', re=/(#[^\n]*)|("""[\s\S]*?"""|f?"[^"\n]*"|f?'[^'\n]*')|\b(import|from|def|return|class|if|else|elif|for|in|while|try|except|as|with|None|True|False|print|lambda|is|not|and|or|raise|self)\b|\b(\d+(?:\.\d+)?)\b/g, last=0, m;
+    function esc(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+    while((m=re.exec(src))){
+      out+=esc(src.slice(last,m.index));
+      var cls=m[1]?'c':m[2]?'s':m[3]?'k':'n';
+      out+='<span class="'+cls+'">'+esc(m[0])+'</span>';
+      last=re.lastIndex;
+    }
+    out+=esc(src.slice(last));
+    el.innerHTML=out;
+  });
+})();
+</script>
+</body>
+</html>
