@@ -4,7 +4,7 @@
 Build an AI-powered chatbot for **Sweet Crumbs Home Bakery** using LangChain and Groq. The chatbot answers customer questions about bakery products and services while following predefined business rules.
 
 ## Technologies Used
-- Python
+- Python 
 - Google Colab
 - LangChain
 - LangChain Groq
