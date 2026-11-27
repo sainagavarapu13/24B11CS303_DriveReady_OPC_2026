@@ -1,6 +1,6 @@
 # Day 1 – Sweet Crumbs Home Bakery AI Chatbot
 
-## Project Overview
+## Project Overview 
 Build an AI-powered chatbot for **Sweet Crumbs Home Bakery** using LangChain and Groq. The chatbot answers customer questions about bakery products and services while following predefined business rules.
 
 ## Technologies Used
