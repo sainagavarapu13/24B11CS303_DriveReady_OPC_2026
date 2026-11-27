@@ -8,7 +8,7 @@ The chatbot maintains conversation history, remembers customer details during a 
 
 ## Technologies Used
 
-- Python
+- Python 
 - Google Colab
 - Groq API
 - OpenAI Python SDK
