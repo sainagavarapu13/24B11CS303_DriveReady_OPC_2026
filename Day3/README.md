@@ -1,6 +1,6 @@
 # Day 3 – Sweet Crumbs AI Assistant Using LangChain
 
-## Project Overview
+## Project Overview 
 
 Build an AI-powered customer support assistant for Sweet Crumbs Home Bakery using LangChain and the Groq API.
 
