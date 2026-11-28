@@ -1,4 +1,4 @@
-# Day 2 – Stateful Sweet Crumbs Home Bakery Chatbot
+# Day 2 – Stateful Sweet Crumbs Home Bakery Chatbot 
 
 ## Project Overview
 
